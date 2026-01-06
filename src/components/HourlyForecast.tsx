@@ -2,7 +2,7 @@ import React, { useMemo, useState, useEffect, useRef } from 'react'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area, ReferenceLine } from 'recharts'
 import { ForecastHour, ForecastBundle } from '../lib/openMeteo'
 import { formatWindSpeed, degToCompass, fmtTime, fmtDay, WindUnit, TemperatureUnit, celsiusToFahrenheit, celsiusToKelvin } from '../lib/format'
-import { TrendingUp, Table, Wind, Waves, Droplets, Cloud, Gauge, Thermometer, ChevronDown, ChevronUp } from 'lucide-react'
+import { TrendingUp, Table, Wind, Waves, Droplets, Cloud, Gauge, Thermometer, ChevronDown, ChevronUp, Navigation, Droplet, Sun, Eye, ThermometerSun } from 'lucide-react'
 import { WaveCompass } from './WaveCompass'
 
 interface HourlyForecastProps {
@@ -36,6 +36,14 @@ export function HourlyForecast({
   const [showGraphs, setShowGraphs] = useState(viewMode === 'surfer')
   const [expandedHour, setExpandedHour] = useState<string | null>(null)
   const tableContainerRef = useRef<HTMLDivElement>(null)
+
+  // Scroll to specific chart
+  const scrollToChart = (chartId: string) => {
+    const element = document.getElementById(chartId)
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+  }
 
   // Auto-scroll to current hour
   useEffect(() => {
@@ -265,6 +273,106 @@ export function HourlyForecast({
         </div>
       )}
 
+      {/* Graph Navigation - Only show when graphs are visible */}
+      {showGraphs && (
+        <div className={`sticky top-2 z-10 mb-4 p-3 rounded-xl border ${theme === 'dark' ? 'border-slate-700 bg-slate-800/90 backdrop-blur-sm' : 'border-slate-200 bg-white/90 backdrop-blur-sm'} shadow-lg`}>
+          <div className="flex items-center gap-2 mb-2">
+            <Navigation size={16} className={theme === 'dark' ? 'text-blue-400' : 'text-blue-600'} />
+            <span className="text-sm font-medium">Quick Jump to Charts:</span>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => scrollToChart('wind-speed-chart')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5 ${theme === 'dark' ? 'bg-slate-700 hover:bg-slate-600 text-slate-200' : 'bg-blue-50 hover:bg-blue-100 text-blue-700'}`}
+            >
+              <Wind size={12} />
+              Wind
+            </button>
+            <button
+              onClick={() => scrollToChart('temperature-chart')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5 ${theme === 'dark' ? 'bg-slate-700 hover:bg-slate-600 text-slate-200' : 'bg-orange-50 hover:bg-orange-100 text-orange-700'}`}
+            >
+              <Thermometer size={12} />
+              Temp
+            </button>
+            <button
+              onClick={() => scrollToChart('humidity-chart')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5 ${theme === 'dark' ? 'bg-slate-700 hover:bg-slate-600 text-slate-200' : 'bg-cyan-50 hover:bg-cyan-100 text-cyan-700'}`}
+            >
+              <Droplets size={12} />
+              Humidity
+            </button>
+            <button
+              onClick={() => scrollToChart('precipitation-chart')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5 ${theme === 'dark' ? 'bg-slate-700 hover:bg-slate-600 text-slate-200' : 'bg-blue-50 hover:bg-blue-100 text-blue-700'}`}
+            >
+              <Droplet size={12} />
+              Rain
+            </button>
+            <button
+              onClick={() => scrollToChart('pressure-chart')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5 ${theme === 'dark' ? 'bg-slate-700 hover:bg-slate-600 text-slate-200' : 'bg-violet-50 hover:bg-violet-100 text-violet-700'}`}
+            >
+              <Gauge size={12} />
+              Pressure
+            </button>
+            <button
+              onClick={() => scrollToChart('uv-index-chart')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5 ${theme === 'dark' ? 'bg-slate-700 hover:bg-slate-600 text-slate-200' : 'bg-yellow-50 hover:bg-yellow-100 text-yellow-700'}`}
+            >
+              <Sun size={12} />
+              UV Index
+            </button>
+            <button
+              onClick={() => scrollToChart('cloud-cover-chart')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5 ${theme === 'dark' ? 'bg-slate-700 hover:bg-slate-600 text-slate-200' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'}`}
+            >
+              <Cloud size={12} />
+              Clouds
+            </button>
+            <button
+              onClick={() => scrollToChart('visibility-chart')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5 ${theme === 'dark' ? 'bg-slate-700 hover:bg-slate-600 text-slate-200' : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700'}`}
+            >
+              <Eye size={12} />
+              Visibility
+            </button>
+            {(viewMode === 'surfer' || viewMode === 'everything') && (
+              <button
+                onClick={() => scrollToChart('wave-height-chart')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5 ${theme === 'dark' ? 'bg-slate-700 hover:bg-slate-600 text-slate-200' : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700'}`}
+              >
+                <Waves size={12} />
+                Waves
+              </button>
+            )}
+            <button
+              onClick={() => scrollToChart('tide-chart')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5 ${theme === 'dark' ? 'bg-slate-700 hover:bg-slate-600 text-slate-200' : 'bg-violet-50 hover:bg-violet-100 text-violet-700'}`}
+            >
+              <Waves size={12} className="rotate-90" />
+              Tide
+            </button>
+            {hoursToShow.some((hour: ForecastHour) => hour.waterTempC) && (
+              <button
+                onClick={() => scrollToChart('water-temp-chart')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5 ${theme === 'dark' ? 'bg-slate-700 hover:bg-slate-600 text-slate-200' : 'bg-sky-50 hover:bg-sky-100 text-sky-700'}`}
+              >
+                <ThermometerSun size={12} />
+                Water Temp
+              </button>
+            )}
+            <button
+              onClick={() => scrollToChart('wind-direction-chart')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5 ${theme === 'dark' ? 'bg-slate-700 hover:bg-slate-600 text-slate-200' : 'bg-amber-50 hover:bg-amber-100 text-amber-700'}`}
+            >
+              <Navigation size={12} />
+              Wind Dir
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Table view */}
       {!showGraphs ? (
         <div className={`rounded-2xl border ${theme === 'dark' ? 'border-slate-700 bg-slate-800/50' : 'border-slate-200 bg-white/80'} overflow-hidden`}>
@@ -466,10 +574,16 @@ export function HourlyForecast({
                                 </div>
                               )}
                               {hour.waterTempC && (
-                                <div className="flex justify-between text-sm">
+                                <button
+                                  onClick={() => {
+                                    setShowGraphs(true)
+                                    setTimeout(() => scrollToChart('water-temp-chart'), 100)
+                                  }}
+                                  className="flex justify-between text-sm w-full text-left hover:opacity-80 transition-opacity"
+                                >
                                   <span>Water Temp</span>
                                   <span className="font-medium">{hour.waterTempC.toFixed(1)}°C</span>
-                                </div>
+                                </button>
                               )}
                             </div>
                           </div>
@@ -491,10 +605,16 @@ export function HourlyForecast({
                                   <span className="font-medium">{hour.wavePeriodS ? `${Math.round(hour.wavePeriodS)}s` : '—'}</span>
                                 </div>
                                 {hour.waveDirectionDeg && (
-                                  <div className="flex justify-between text-sm">
+                                  <button
+                                    onClick={() => {
+                                      setShowGraphs(true)
+                                      setTimeout(() => scrollToChart('wave-height-chart'), 100)
+                                    }}
+                                    className="flex justify-between text-sm w-full text-left hover:opacity-80 transition-opacity"
+                                  >
                                     <span>Direction</span>
                                     <span className="font-medium">{degToCompass(hour.waveDirectionDeg)}</span>
-                                  </div>
+                                  </button>
                                 )}
                               </div>
                             </div>
@@ -509,10 +629,10 @@ export function HourlyForecast({
           </div>
         </div>
       ) : (
-        /* Comprehensive Graph view with all charts from second component */
+        /* Comprehensive Graph view with all charts */
         <div className="space-y-6">
           {/* Wind Speed Chart */}
-          <div className={`overflow-hidden rounded-2xl border ${theme === 'dark' ? 'border-slate-700 bg-slate-800' : 'border-slate-200 bg-white'} p-4`}>
+          <div id="wind-speed-chart" className={`overflow-hidden rounded-2xl border ${theme === 'dark' ? 'border-slate-700 bg-slate-800' : 'border-slate-200 bg-white'} p-4`}>
             <h3 className={`text-lg font-semibold mb-4 ${theme === 'dark' ? 'text-slate-100' : 'text-slate-900'}`}>
               Wind Speed ({unit})
             </h3>
@@ -568,7 +688,7 @@ export function HourlyForecast({
           </div>
 
           {/* UV Index Chart */}
-          <div className={`overflow-hidden rounded-2xl border ${theme === 'dark' ? 'border-slate-700 bg-slate-800' : 'border-slate-200 bg-white'} p-4`}>
+          <div id="uv-index-chart" className={`overflow-hidden rounded-2xl border ${theme === 'dark' ? 'border-slate-700 bg-slate-800' : 'border-slate-200 bg-white'} p-4`}>
             <h3 className={`text-lg font-semibold mb-4 ${theme === 'dark' ? 'text-slate-100' : 'text-slate-900'}`}>
               UV Index
             </h3>
@@ -623,7 +743,7 @@ export function HourlyForecast({
 
           {/* Wave Height Chart */}
           {(viewMode === 'surfer' || viewMode === 'everything') && (
-            <div className={`overflow-hidden rounded-2xl border ${theme === 'dark' ? 'border-slate-700 bg-slate-800' : 'border-slate-200 bg-white'} p-4`}>
+            <div id="wave-height-chart" className={`overflow-hidden rounded-2xl border ${theme === 'dark' ? 'border-slate-700 bg-slate-800' : 'border-slate-200 bg-white'} p-4`}>
               <div className="flex items-center justify-between mb-4">
                 <h3 className={`text-lg font-semibold ${theme === 'dark' ? 'text-slate-100' : 'text-slate-900'}`}>
                   Wave Height
@@ -686,7 +806,7 @@ export function HourlyForecast({
           )}
 
           {/* Temperature Chart */}
-          <div className={`overflow-hidden rounded-2xl border ${theme === 'dark' ? 'border-slate-700 bg-slate-800' : 'border-slate-200 bg-white'} p-4`}>
+          <div id="temperature-chart" className={`overflow-hidden rounded-2xl border ${theme === 'dark' ? 'border-slate-700 bg-slate-800' : 'border-slate-200 bg-white'} p-4`}>
             <h3 className={`text-lg font-semibold mb-4 ${theme === 'dark' ? 'text-slate-100' : 'text-slate-900'}`}>
               Temperature ({temperatureUnit === 'celsius' ? '°C' : temperatureUnit === 'fahrenheit' ? '°F' : 'K'})
             </h3>
@@ -741,7 +861,7 @@ export function HourlyForecast({
           </div>
 
           {/* Humidity Chart */}
-          <div className={`overflow-hidden rounded-2xl border ${theme === 'dark' ? 'border-slate-700 bg-slate-800' : 'border-slate-200 bg-white'} p-4`}>
+          <div id="humidity-chart" className={`overflow-hidden rounded-2xl border ${theme === 'dark' ? 'border-slate-700 bg-slate-800' : 'border-slate-200 bg-white'} p-4`}>
             <h3 className={`text-lg font-semibold mb-4 ${theme === 'dark' ? 'text-slate-100' : 'text-slate-900'}`}>
               Humidity
             </h3>
@@ -795,7 +915,7 @@ export function HourlyForecast({
           </div>
 
           {/* Pressure Chart */}
-          <div className={`overflow-hidden rounded-2xl border ${theme === 'dark' ? 'border-slate-700 bg-slate-800' : 'border-slate-200 bg-white'} p-4`}>
+          <div id="pressure-chart" className={`overflow-hidden rounded-2xl border ${theme === 'dark' ? 'border-slate-700 bg-slate-800' : 'border-slate-200 bg-white'} p-4`}>
             <h3 className={`text-lg font-semibold mb-4 ${theme === 'dark' ? 'text-slate-100' : 'text-slate-900'}`}>
               Atmospheric Pressure
             </h3>
@@ -848,7 +968,7 @@ export function HourlyForecast({
           </div>
 
           {/* Precipitation Chart */}
-          <div className={`overflow-hidden rounded-2xl border ${theme === 'dark' ? 'border-slate-700 bg-slate-800' : 'border-slate-200 bg-white'} p-4`}>
+          <div id="precipitation-chart" className={`overflow-hidden rounded-2xl border ${theme === 'dark' ? 'border-slate-700 bg-slate-800' : 'border-slate-200 bg-white'} p-4`}>
             <h3 className={`text-lg font-semibold mb-4 ${theme === 'dark' ? 'text-slate-100' : 'text-slate-900'}`}>
               Precipitation
             </h3>
@@ -923,7 +1043,7 @@ export function HourlyForecast({
           </div>
 
           {/* Cloud Cover Chart */}
-          <div className={`overflow-hidden rounded-2xl border ${theme === 'dark' ? 'border-slate-700 bg-slate-800' : 'border-slate-200 bg-white'} p-4`}>
+          <div id="cloud-cover-chart" className={`overflow-hidden rounded-2xl border ${theme === 'dark' ? 'border-slate-700 bg-slate-800' : 'border-slate-200 bg-white'} p-4`}>
             <h3 className={`text-lg font-semibold mb-4 ${theme === 'dark' ? 'text-slate-100' : 'text-slate-900'}`}>
               Cloud Cover
             </h3>
@@ -977,7 +1097,7 @@ export function HourlyForecast({
           </div>
 
           {/* Visibility Chart */}
-          <div className={`overflow-hidden rounded-2xl border ${theme === 'dark' ? 'border-slate-700 bg-slate-800' : 'border-slate-200 bg-white'} p-4`}>
+          <div id="visibility-chart" className={`overflow-hidden rounded-2xl border ${theme === 'dark' ? 'border-slate-700 bg-slate-800' : 'border-slate-200 bg-white'} p-4`}>
             <h3 className={`text-lg font-semibold mb-4 ${theme === 'dark' ? 'text-slate-100' : 'text-slate-900'}`}>
               Visibility
             </h3>
@@ -1030,7 +1150,7 @@ export function HourlyForecast({
           </div>
 
           {/* Tide Chart */}
-          <div className={`overflow-hidden rounded-2xl border ${theme === 'dark' ? 'border-slate-700 bg-slate-800' : 'border-slate-200 bg-white'} p-4`}>
+          <div id="tide-chart" className={`overflow-hidden rounded-2xl border ${theme === 'dark' ? 'border-slate-700 bg-slate-800' : 'border-slate-200 bg-white'} p-4`}>
             <div className="flex items-center justify-between mb-4">
               <h3 className={`text-lg font-semibold ${theme === 'dark' ? 'text-slate-100' : 'text-slate-900'}`}>
                 Tide Height
@@ -1093,7 +1213,7 @@ export function HourlyForecast({
 
           {/* Water Temperature Chart (if available) */}
           {hoursToShow.some((hour: ForecastHour) => hour.waterTempC) && (
-            <div className={`overflow-hidden rounded-2xl border ${theme === 'dark' ? 'border-slate-700 bg-slate-800' : 'border-slate-200 bg-white'} p-4`}>
+            <div id="water-temp-chart" className={`overflow-hidden rounded-2xl border ${theme === 'dark' ? 'border-slate-700 bg-slate-800' : 'border-slate-200 bg-white'} p-4`}>
               <h3 className={`text-lg font-semibold mb-4 ${theme === 'dark' ? 'text-slate-100' : 'text-slate-900'}`}>
                 Water Temperature ({temperatureUnit === 'celsius' ? '°C' : temperatureUnit === 'fahrenheit' ? '°F' : 'K'})
               </h3>
@@ -1150,7 +1270,7 @@ export function HourlyForecast({
           )}
 
           {/* Wind Direction Chart */}
-          <div className={`overflow-hidden rounded-2xl border ${theme === 'dark' ? 'border-slate-700 bg-slate-800' : 'border-slate-200 bg-white'} p-4`}>
+          <div id="wind-direction-chart" className={`overflow-hidden rounded-2xl border ${theme === 'dark' ? 'border-slate-700 bg-slate-800' : 'border-slate-200 bg-white'} p-4`}>
             <h3 className={`text-lg font-semibold mb-4 ${theme === 'dark' ? 'text-slate-100' : 'text-slate-900'}`}>
               Wind Direction
             </h3>
