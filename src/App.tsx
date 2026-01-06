@@ -1233,7 +1233,7 @@ export default function App() {
                 <span className={`text-sm ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}>Support this project:</span>
                 <div className="flex gap-2">
                   <a
-                    href="https://www.paypal.com/donate"
+                    href="https://www.paypal.me/jaydenburger"
                     target="_blank"
                     rel="noopener noreferrer"
                     className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${theme === 'dark'
