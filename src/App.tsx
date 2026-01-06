@@ -1,12 +1,14 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, lazy, Suspense } from 'react'
 import { degToCompass, formatWindSpeed, fmtDay, fmtTime, WindUnit, TemperatureUnit, formatTemperature, formatTemperatureForDisplay } from './lib/format'
 import { fetchForecast, ForecastBundle, ForecastHour, geocode, GeoResult } from './lib/openMeteo'
 import { ChevronUp, ChevronDown, Settings } from 'lucide-react'
 import { Compass } from './components/Compass'
-import { HourlyForecast } from './components/HourlyForecast'
 import { FloatingButtons } from './components/FloatingButtons'
 import { LocationPanel } from './components/LocationPanel'
 import { NtfyPanel, NtfySettings } from './components/NtfyPanel'
+
+// Lazy load heavy components
+const HourlyForecast = lazy(() => import('./components/HourlyForecast').then(module => ({ default: module.HourlyForecast })))
 
 type Theme = 'light' | 'dark'
 type ViewMode = 'casual' | 'surfer' | 'everything' | 'custom'
@@ -950,35 +952,41 @@ export default function App() {
 
         {/* Hourly forecast */}
         {bundle && !loading && (
-          <HourlyForecast
-            bundle={bundle}
-            hourlyFilter={hourlyFilter}
-            onHourlyFilterChange={setHourlyFilter}
-            unit={unit}
-            temperatureUnit={temperatureUnit}
-            onTemperatureUnitChange={setTemperatureUnit}
-            theme={theme}
-            viewMode={viewMode}
-            location={{
-              id: location.id.toString(),
-              name: location.name,
-              lat: location.latitude,
-              lon: location.longitude
-            }}
-            savedLocations={{
-              items: savedLocations.items.map(loc => ({
-                id: loc.id.toString(),
-                name: loc.name,
-                lat: loc.latitude,
-                lon: loc.longitude
-              }))
-            }}
-            onLocationChange={(newLocation) => {
-              const savedLoc = savedLocations.items.find(loc => loc.id.toString() === newLocation.id)
-              if (savedLoc) {
-                setLocation(savedLoc)
-              }
-            }}          />
+          <Suspense fallback={
+            <div className={`mb-8 rounded-2xl p-8 text-center ${theme === 'dark' ? 'bg-slate-800 text-slate-400' : 'bg-white text-slate-600'}`}>
+              <div className="animate-pulse">Loading hourly forecast...</div>
+            </div>
+          }>
+            <HourlyForecast
+              bundle={bundle}
+              hourlyFilter={hourlyFilter}
+              onHourlyFilterChange={setHourlyFilter}
+              unit={unit}
+              temperatureUnit={temperatureUnit}
+              onTemperatureUnitChange={setTemperatureUnit}
+              theme={theme}
+              viewMode={viewMode}
+              location={{
+                id: location.id.toString(),
+                name: location.name,
+                lat: location.latitude,
+                lon: location.longitude
+              }}
+              savedLocations={{
+                items: savedLocations.items.map(loc => ({
+                  id: loc.id.toString(),
+                  name: loc.name,
+                  lat: loc.latitude,
+                  lon: loc.longitude
+                }))
+              }}
+              onLocationChange={(newLocation) => {
+                const savedLoc = savedLocations.items.find(loc => loc.id.toString() === newLocation.id)
+                if (savedLoc) {
+                  setLocation(savedLoc)
+                }
+              }}          />
+          </Suspense>
         )}
 
         {/* Astronomical Details */}

@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react'
+import React, { useMemo, useState, useEffect, useRef } from 'react'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area, ReferenceLine } from 'recharts'
 import { ForecastHour, ForecastBundle } from '../lib/openMeteo'
 import { formatWindSpeed, degToCompass, fmtTime, fmtDay, WindUnit, TemperatureUnit, formatTemperature, celsiusToFahrenheit, celsiusToKelvin } from '../lib/format'
@@ -34,6 +34,25 @@ export function HourlyForecast({
 }: HourlyForecastProps) {
   const [selectedDay, setSelectedDay] = useState(0)
   const [showGraphs, setShowGraphs] = useState(viewMode === 'surfer')
+  const tableContainerRef = useRef<HTMLDivElement>(null)
+
+  // Auto-scroll to current hour
+  useEffect(() => {
+    if (!showGraphs && tableContainerRef.current && bundle?.hours?.length) {
+      // Small delay to ensure the table is rendered
+      const timer = setTimeout(() => {
+        const currentHourElement = tableContainerRef.current?.querySelector('[data-current-hour="true"]')
+        if (currentHourElement) {
+          currentHourElement.scrollIntoView({
+            behavior: 'smooth',
+            block: 'center'
+          })
+        }
+      }, 100)
+      
+      return () => clearTimeout(timer)
+    }
+  }, [showGraphs, bundle, hourlyFilter, selectedDay])
 
   // Generate unique days from forecast data
   const availableDays = useMemo(() => {
@@ -544,7 +563,7 @@ function getTideStatus(time: string): string {
         </div>
 
         {/* Rows */}
-        <div className="max-h-96 overflow-y-auto">
+        <div className="max-h-96 overflow-y-auto" ref={tableContainerRef}>
           {hoursToShow.map((hour: ForecastHour, index: number) => {
             const isCurrentHour = Math.abs(new Date(hour.time).getTime() - Date.now()) < 30 * 60 * 1000
             const isToday = new Date(hour.time).toDateString() === new Date().toDateString()
@@ -553,6 +572,7 @@ function getTideStatus(time: string): string {
             return (
               <div
                 key={hour.time}
+                data-current-hour={isCurrentHour}
                 className={`grid grid-cols-8 gap-2 sm:gap-4 border-b p-2 sm:p-3 text-xs sm:text-sm transition-colors hover:${
                   theme === 'dark' ? 'bg-slate-700' : 'bg-blue-50'
                 } ${isCurrentHour
