@@ -8,6 +8,7 @@ import { LocationPanel } from './components/LocationPanel'
 import { NtfyPanel, NtfySettings } from './components/NtfyPanel'
 import { DiscordSettings } from './components/DiscordSettings'
 import { DiscordConfig, DiscordNotificationService } from './lib/discordService'
+import { GTAMapBackground } from './components/GTAMapBackground'
 
 // Lazy load heavy components
 const HourlyForecast = lazy(() => import('./components/HourlyForecast').then(module => ({ default: module.HourlyForecast })))
@@ -387,6 +388,7 @@ export default function App() {
     return saved.items.find((l) => l.id === current.id) || current
   })
   const [savedLocations, setSavedLocations] = useState<SavedLocations>(() => readJson('bw_saved_locations', { items: [] }))
+  const [showArcReactor, setShowArcReactor] = useState(() => readJson('bw_arc_reactor', true))
   const [customSettings, setCustomSettings] = useState<CustomSettings>(() => readJson<CustomSettings>('bw_custom_settings', {
     topRow: ['wind', 'temperature', 'time'],
     cardDetails: ['wind', 'temperature', 'humidity', 'clouds'],
@@ -422,18 +424,20 @@ export default function App() {
     writeJson('bw_custom_settings', customSettings)
   }, [customSettings])
 
-  useEffect(() => {
-    writeJson('bw_temperature_unit', temperatureUnit)
-  }, [temperatureUnit])
+useEffect(() => {
+writeJson('bw_temperature_unit', temperatureUnit)
+}, [temperatureUnit])
 
-  useEffect(() => {
-    writeJson('bw_discord_config', discordConfig)
-  }, [discordConfig])
+useEffect(() => {
+writeJson('bw_discord_config', discordConfig)
+}, [discordConfig])
 
-  // Hourly forecast filter state
-  const [hourlyFilter, setHourlyFilter] = useState<'6h' | '24h' | '7d'>('24h')
+useEffect(() => {
+writeJson('bw_arc_reactor', showArcReactor)
+}, [showArcReactor])
 
-  // Application state
+// Hourly forecast filter state
+const [hourlyFilter, setHourlyFilter] = useState<'6h' | '24h' | '7d'>('24h')
   const [bundle, setBundle] = useState<ForecastBundle | null>(null)
   const [loading, setLoading] = useState(false)
   const [err, setErr] = useState<string | null>(null)
@@ -666,7 +670,16 @@ export default function App() {
 
   return (
     <div className={`min-h-screen ${theme === 'dark' ? 'bg-slate-900 text-slate-100' : 'bg-gradient-to-br from-blue-50 to-white text-slate-900'}`}>
-      <div className="mx-auto w-full max-w-6xl px-3 pb-32 pt-4 sm:px-4 md:px-6">
+      {/* GTA Map Background - Conditional */}
+      {showArcReactor && (
+        <GTAMapBackground 
+          latitude={location.latitude} 
+          longitude={location.longitude} 
+          theme={theme} 
+        />
+      )}
+      
+      <div className="mx-auto w-full max-w-6xl px-3 pb-32 pt-4 sm:px-4 md:px-6 relative z-10">
         {/* Header with basics */}
         <header className="mb-4 sm:mb-6">
           <div className="flex flex-col gap-3">
@@ -1198,6 +1211,8 @@ export default function App() {
           setShowLocationPanel={setShowLocationPanel}
           setShowNtfyPanel={setShowNtfyPanel}
           setShowDiscordPanel={setShowDiscordPanel}
+          showArcReactor={showArcReactor}
+          setShowArcReactor={setShowArcReactor}
         />
 
         {/* Discord Settings Panel */}
@@ -1351,7 +1366,7 @@ export default function App() {
       </div>
 
       {/* Footer */}
-      <footer className={`mt-16 border-t ${theme === 'dark' ? 'border-slate-700 bg-slate-900' : 'border-slate-200 bg-white'} py-8`}>
+      <footer className={`mt-16 border-t ${theme === 'dark' ? 'border-slate-700 bg-slate-900' : 'border-slate-200 bg-white'} py-8 relative z-20`}>
         <div className="mx-auto w-full max-w-6xl px-4">
           <div className="flex flex-col md:flex-row justify-between items-center gap-8">
             <div className={`text-sm ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}>

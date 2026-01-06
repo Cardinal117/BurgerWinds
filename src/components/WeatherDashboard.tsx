@@ -91,7 +91,7 @@ export function WeatherDashboard({ bundle, nowHour, theme, unit, onUnitChange, o
     
     return {
       time: fmtTime(hour.time, bundle?.timezone || 'UTC'),
-      windSpeed: windSpeed,
+      windSpeed: Math.round(windSpeed),
       temperature: hour.temperatureC,
       humidity: hour.humidityPct,
       waveHeight: hour.waveHeightM,

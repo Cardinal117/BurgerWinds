@@ -267,7 +267,7 @@ function getTideStatus(time: string): string {
                 
                 return {
                   time: fmtTime(hour.time, bundle?.timezone || 'UTC'),
-                  windSpeed: Math.round(windSpeed * 100) / 100,
+                  windSpeed: Math.round(windSpeed),
                   temperature: Math.round(hour.temperatureC * 100) / 100,
                   humidity: Math.round(hour.humidityPct * 100) / 100,
                   isCurrentHour: Math.abs(new Date(hour.time).getTime() - Date.now()) < 30 * 60 * 1000
@@ -291,7 +291,7 @@ function getTideStatus(time: string): string {
                   }}
                   labelStyle={{ color: theme === 'dark' ? '#f1f5f9' : '#0f172a' }}
                   formatter={(value: any, name?: string) => {
-                    if (name === 'windSpeed') return [`${Math.round(value * 100) / 100} ${unit}`, 'Wind Speed']
+                    if (name === 'windSpeed') return [`${Math.round(value)} ${unit}`, 'Wind Speed']
                     return [`${Math.round(value * 100) / 100}`, name]
                   }}
                 />
