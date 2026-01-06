@@ -24,6 +24,7 @@ export type ForecastHour = {
   waveDirectionDeg?: number
   wavePeriodS?: number
   waterTempC?: number
+  uvIndex?: number
 }
 
 export type ForecastBundle = {
@@ -83,6 +84,7 @@ export async function fetchForecast(args: {
       'precipitation',
       'pressure_msl',
       'visibility',
+      'uv_index',
     ].join(',')
   )
   weatherUrl.searchParams.set('daily', ['sunrise', 'sunset'].join(','))
@@ -112,6 +114,7 @@ export async function fetchForecast(args: {
   const precip = asNumberArray(weather?.hourly?.precipitation)
   const pressure = asNumberArray(weather?.hourly?.pressure_msl)
   const visibility = asNumberArray(weather?.hourly?.visibility)
+  const uvIndex = asNumberArray(weather?.hourly?.uv_index)
 
   const marineTime = asStringArray(marine?.hourly?.time)
   const waveHeight = asNumberArray(marine?.hourly?.wave_height)
@@ -136,6 +139,7 @@ export async function fetchForecast(args: {
       precipitationMm: precip[i],
       pressureMslHpa: pressure[i],
       visibilityM: visibility[i],
+      uvIndex: uvIndex[i],
       waveHeightM: mi == null ? undefined : waveHeight[mi],
       waveDirectionDeg: mi == null ? undefined : waveDirection[mi],
       wavePeriodS: mi == null ? undefined : wavePeriod[mi],

@@ -91,6 +91,15 @@ function fmtVisibility(m?: number): string {
   return `${(m / 1000).toFixed(1)} km`
 }
 
+function getUVLevel(uvIndex?: number): string {
+  if (uvIndex == null || Number.isNaN(uvIndex)) return 'Not available'
+  if (uvIndex < 3) return 'Low'
+  if (uvIndex < 6) return 'Moderate'
+  if (uvIndex < 8) return 'High'
+  if (uvIndex < 11) return 'Very High'
+  return 'Extreme'
+}
+
 function getDirectionColor(deg: number): string {
   if (deg == null || Number.isNaN(deg)) return 'text-gray-500'
   const normalized = ((deg + 360) % 360)
@@ -923,6 +932,15 @@ const [hourlyFilter, setHourlyFilter] = useState<'6h' | '24h' | '7d'>('24h')
                     </div>
                   </div>
                   <div className={`rounded-2xl p-3 ${theme === 'dark' ? 'bg-slate-900' : 'bg-blue-50'}`}>
+                    <div className={`text-xs font-medium ${theme === 'dark' ? 'text-blue-400' : 'text-blue-600'}`}>UV Index</div>
+                    <div className={`mt-1 text-xl font-bold ${theme === 'dark' ? 'text-slate-100' : 'text-slate-900'}`}>
+                      {nowHour.uvIndex == null ? '—' : nowHour.uvIndex.toFixed(1)}
+                    </div>
+                    <div className={`text-xs ${theme === 'dark' ? 'text-slate-300' : 'text-slate-600'}`}>
+                      {nowHour.uvIndex == null ? 'Not available' : getUVLevel(nowHour.uvIndex)}
+                    </div>
+                  </div>
+                  <div className={`rounded-2xl p-3 ${theme === 'dark' ? 'bg-slate-900' : 'bg-blue-50'}`}>
                     <div className={`text-xs font-medium ${theme === 'dark' ? 'text-blue-400' : 'text-blue-600'}`}>Water</div>
                     <div className={`mt-1 text-xl font-bold ${theme === 'dark' ? 'text-slate-100' : 'text-slate-900'}`}>
                       {nowHour.waterTempC == null ? '—' : `${nowHour.waterTempC.toFixed(1)}°C`}
@@ -1394,7 +1412,7 @@ const [hourlyFilter, setHourlyFilter] = useState<'6h' | '24h' | '7d'>('24h')
                 <span className={`text-sm ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}>Support this project:</span>
                 <div className="flex gap-2">
                   <a
-                    href="https://www.paypal.me/jaydenburger"
+                    href="https://www.paypal.me/acutejoker"
                     target="_blank"
                     rel="noopener noreferrer"
                     className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${theme === 'dark'
@@ -1405,7 +1423,7 @@ const [hourlyFilter, setHourlyFilter] = useState<'6h' | '24h' | '7d'>('24h')
                     ☕ Buy me a coffee
                   </a>
                   <a
-                    href="https://www.paypal.me/jaydenburger"
+                    href="https://www.paypal.me/acutejoker"
                     target="_blank"
                     rel="noopener noreferrer"
                     className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${theme === 'dark'
