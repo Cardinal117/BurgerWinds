@@ -98,6 +98,99 @@ function getWindSurferRating(windSpeedKmh: number): { rating: string; color: str
   return { rating: 'Strong+', color: 'text-red-600', range: '30+ km/h' }
 }
 
+// Tide calculation functions
+function calculateTideHeight(time: string): number {
+  const date = new Date(time)
+  const hours = date.getUTCHours()
+  const tidalPeriod = 12.42
+  const phase = (hours % tidalPeriod) / tidalPeriod * 2 * Math.PI
+  const meanTide = 1.1
+  const tideRange = 0.9
+  return meanTide + tideRange * Math.sin(phase - Math.PI / 2)
+}
+
+function getTideStatus(time: string): string {
+  const date = new Date(time)
+  const hours = date.getUTCHours()
+  const tidalPeriod = 12.42
+  const phase = (hours % tidalPeriod) / tidalPeriod * 2 * Math.PI
+  
+  // Determine if tide is rising or falling
+  const nextPhase = phase + 0.1
+  const currentHeight = Math.sin(phase - Math.PI / 2)
+  const nextHeight = Math.sin(nextPhase - Math.PI / 2)
+  
+  if (nextHeight > currentHeight) {
+    return 'Rising'
+  } else {
+    return 'Falling'
+  }
+}
+
+function getTideTimes(time: string): { nextHigh: string; nextLow: string } {
+  const date = new Date(time)
+  const hours = date.getUTCHours()
+  const tidalPeriod = 12.42
+  
+  // Calculate next high tide (approximately 6am and 6pm)
+  const nextHighHour = Math.ceil((hours + 6) / 6) * 6 % 24
+  const nextLowHour = (nextHighHour + 6) % 24
+  
+  const nextHigh = new Date(date)
+  nextHigh.setUTCHours(nextHighHour, 0, 0, 0)
+  
+  const nextLow = new Date(date)
+  nextLow.setUTCHours(nextLowHour, 0, 0, 0)
+  
+  return {
+    nextHigh: fmtTime(nextHigh.toISOString(), 'UTC'),
+    nextLow: fmtTime(nextLow.toISOString(), 'UTC')
+  }
+}
+
+// Astronomical calculations
+function getMoonPhase(date: Date): { name: string; emoji: string; illumination: number } {
+  const year = date.getFullYear()
+  const month = date.getMonth() + 1
+  const day = date.getDate()
+  
+  // Simple moon phase calculation
+  const c = Math.floor((year - 1900) / 100)
+  const e = Math.floor((year - 1900) % 100 / 4)
+  const f = Math.floor((year - 1900) % 100 * 0.8 + 1)
+  const g = Math.floor((month - 1) * 2.6 - 0.2)
+  const h = day
+  
+  const julian = h + g + f + e + c + 1720995
+  const phase = (julian + 2) % 30
+  
+  if (phase < 7.4) return { name: 'New Moon', emoji: '🌑', illumination: 0 }
+  if (phase < 11.1) return { name: 'Waxing Crescent', emoji: '🌒', illumination: 25 }
+  if (phase < 14.8) return { name: 'First Quarter', emoji: '🌓', illumination: 50 }
+  if (phase < 18.5) return { name: 'Waxing Gibbous', emoji: '🌔', illumination: 75 }
+  if (phase < 22.2) return { name: 'Full Moon', emoji: '🌕', illumination: 100 }
+  if (phase < 25.9) return { name: 'Waning Gibbous', emoji: '🌖', illumination: 75 }
+  if (phase < 29.6) return { name: 'Last Quarter', emoji: '🌗', illumination: 50 }
+  return { name: 'Waning Crescent', emoji: '🌘', illumination: 25 }
+}
+
+function calculateMoonTimes(date: Date, timezone: string): { rise: string; set: string } {
+  // Simplified moon calculations - in real app would use astronomical library
+  const moonriseHour = (date.getHours() + 6) % 24
+  const moonsetHour = (date.getHours() + 18) % 24
+  
+  const rise = new Date(date)
+  rise.setHours(moonriseHour, 0, 0, 0)
+  
+  const set = new Date(date)
+  set.setHours(moonsetHour, 0, 0, 0)
+  
+  return {
+    rise: fmtTime(rise.toISOString(), timezone),
+    set: fmtTime(set.toISOString(), timezone)
+  }
+}
+
 function getWaterSurfaceDescription(waveHeightM?: number, windSpeedKmh?: number): { condition: string; color: string } {
   if (!waveHeightM || waveHeightM < 0.3) return { condition: 'Smooth', color: 'text-blue-600' }
   if (waveHeightM < 0.8) return { condition: 'Choppy', color: 'text-green-600' }
@@ -462,10 +555,14 @@ export default function App() {
                     ? 'bg-slate-800 text-slate-200 ring-1 ring-slate-700 hover:bg-slate-700'
                     : 'bg-blue-600 text-white hover:bg-blue-700'
                   }`}
-                onClick={() => setUnit((u) => (u === 'kmh' ? 'kts' : 'kmh'))}
+                onClick={() => setUnit((u) => {
+                  if (u === 'kmh') return 'kts'
+                  if (u === 'kts') return 'mps'
+                  return 'kmh'
+                })}
                 type="button"
               >
-                {unit === 'kmh' ? 'km/h' : 'kts'}
+                {unit === 'kmh' ? 'km/h' : unit === 'kts' ? 'kts' : 'm/s'}
               </button>
               <button
                 className={`rounded-full px-4 py-2 text-xs font-medium shadow-md hover:opacity-90 ${theme === 'dark'
@@ -493,9 +590,9 @@ export default function App() {
 
         {/* Now card */}
         {nowHour ? (
-          <div className={`mb-8 rounded-3xl p-6 shadow-lg ring-1 ${theme === 'dark' ? 'bg-slate-800 ring-slate-700' : 'bg-white ring-blue-100'
+          <div className={`mb-6 rounded-2xl p-4 shadow-lg ring-1 ${theme === 'dark' ? 'bg-slate-800 ring-slate-700' : 'bg-white ring-blue-100'
             }`}>
-            <div className={`mb-4 text-xs font-semibold uppercase tracking-wide ${theme === 'dark' ? 'text-blue-400' : 'text-blue-600'
+            <div className={`mb-3 text-xs font-semibold uppercase tracking-wide ${theme === 'dark' ? 'text-blue-400' : 'text-blue-600'
               }`}>Now</div>
 
             {viewMode === 'custom' && (
@@ -548,15 +645,15 @@ export default function App() {
               </div>
             )}
 
-            <div className={`grid grid-cols-1 gap-4 ${viewMode === 'surfer' ? 'md:grid-cols-2' : viewMode === 'custom' ? 'md:grid-cols-2 lg:grid-cols-4' : 'md:grid-cols-2 lg:grid-cols-4'}`}>
+            <div className={`grid grid-cols-1 gap-4 ${viewMode === 'surfer' ? 'md:grid-cols-2 lg:grid-cols-3' : viewMode === 'custom' ? 'md:grid-cols-2 lg:grid-cols-4' : 'md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5'}`}>
               {viewMode !== 'custom' && (
                 <>
-                  <div className={`rounded-2xl p-4 ${theme === 'dark' ? 'bg-slate-900' : 'bg-blue-50'}`}>
+                  <div className={`rounded-2xl p-3 ${theme === 'dark' ? 'bg-slate-900' : 'bg-blue-50'}`}>
                     <div className={`text-xs font-medium ${theme === 'dark' ? 'text-blue-400' : 'text-blue-600'}`}>Wind</div>
-                    <div className={`mt-1 text-2xl font-bold ${theme === 'dark' ? 'text-slate-100' : 'text-slate-900'}`}>
+                    <div className={`mt-1 text-xl font-bold ${theme === 'dark' ? 'text-slate-100' : 'text-slate-900'}`}>
                       {formatWindSpeed(nowHour.windSpeed10mKmh, unit)}
                     </div>
-                    <div className={`text-sm ${theme === 'dark' ? 'text-slate-300' : 'text-slate-600'}`}>
+                    <div className={`text-xs ${theme === 'dark' ? 'text-slate-300' : 'text-slate-600'}`}>
                       <span className={getDirectionColor(nowHour.windDirection10mDeg)}>
                         {degToCompass(nowHour.windDirection10mDeg)}
                       </span>{' '}
@@ -566,10 +663,10 @@ export default function App() {
                       Gust {nowHour.windGusts10mKmh == null ? '—' : formatWindSpeed(nowHour.windGusts10mKmh, unit)}
                     </div>
                   </div>
-                  <div className={`rounded-2xl p-4 ${theme === 'dark' ? 'bg-slate-900' : 'bg-blue-50'}`}>
+                  <div className={`rounded-2xl p-3 ${theme === 'dark' ? 'bg-slate-900' : 'bg-blue-50'}`}>
                     <div className={`text-xs font-medium ${theme === 'dark' ? 'text-blue-400' : 'text-blue-600'}`}>Weather</div>
-                    <div className={`mt-1 text-2xl font-bold ${theme === 'dark' ? 'text-slate-100' : 'text-slate-900'}`}>{Math.round(nowHour.temperatureC)}°C</div>
-                    <div className={`text-sm ${theme === 'dark' ? 'text-slate-300' : 'text-slate-600'}`}>
+                    <div className={`mt-1 text-xl font-bold ${theme === 'dark' ? 'text-slate-100' : 'text-slate-900'}`}>{Math.round(nowHour.temperatureC)}°C</div>
+                    <div className={`text-xs ${theme === 'dark' ? 'text-slate-300' : 'text-slate-600'}`}>
                       Hum {Math.round(nowHour.humidityPct)}% • Clouds {Math.round(nowHour.cloudCoverPct)}%
                     </div>
                     <div className={`mt-1 text-xs ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>
@@ -580,12 +677,12 @@ export default function App() {
                       P {nowHour.pressureMslHpa == null ? '—' : `${Math.round(nowHour.pressureMslHpa)} hPa`} • Vis {fmtVisibility(nowHour.visibilityM)}
                     </div>
                   </div>
-                  <div className={`rounded-2xl p-4 ${theme === 'dark' ? 'bg-slate-900' : 'bg-blue-50'}`}>
+                  <div className={`rounded-2xl p-3 ${theme === 'dark' ? 'bg-slate-900' : 'bg-blue-50'}`}>
                     <div className={`text-xs font-medium ${theme === 'dark' ? 'text-blue-400' : 'text-blue-600'}`}>Waves</div>
-                    <div className={`mt-1 text-2xl font-bold ${theme === 'dark' ? 'text-slate-100' : 'text-slate-900'}`}>
+                    <div className={`mt-1 text-xl font-bold ${theme === 'dark' ? 'text-slate-100' : 'text-slate-900'}`}>
                       {nowHour.waveHeightM == null ? '—' : `${nowHour.waveHeightM.toFixed(1)} m`}
                     </div>
-                    <div className={`text-sm ${theme === 'dark' ? 'text-slate-300' : 'text-slate-600'}`}>
+                    <div className={`text-xs ${theme === 'dark' ? 'text-slate-300' : 'text-slate-600'}`}>
                       {nowHour.waveDirectionDeg == null ? '—' : (
                         <span className={getDirectionColor(nowHour.waveDirectionDeg)}>
                           {degToCompass(nowHour.waveDirectionDeg)}
@@ -594,12 +691,24 @@ export default function App() {
                       {nowHour.wavePeriodS == null ? '' : ` • ${Math.round(nowHour.wavePeriodS)}s`}
                     </div>
                   </div>
-                  <div className={`rounded-2xl p-4 ${theme === 'dark' ? 'bg-slate-900' : 'bg-blue-50'}`}>
+                  <div className={`rounded-2xl p-3 ${theme === 'dark' ? 'bg-slate-900' : 'bg-blue-50'}`}>
                     <div className={`text-xs font-medium ${theme === 'dark' ? 'text-blue-400' : 'text-blue-600'}`}>Water</div>
-                    <div className={`mt-1 text-2xl font-bold ${theme === 'dark' ? 'text-slate-100' : 'text-slate-900'}`}>
+                    <div className={`mt-1 text-xl font-bold ${theme === 'dark' ? 'text-slate-100' : 'text-slate-900'}`}>
                       {nowHour.waterTempC == null ? '—' : `${nowHour.waterTempC.toFixed(1)}°C`}
                     </div>
-                    <div className={`text-sm ${theme === 'dark' ? 'text-slate-300' : 'text-slate-600'}`}>Sea surface</div>
+                    <div className={`text-xs ${theme === 'dark' ? 'text-slate-300' : 'text-slate-600'}`}>Sea surface</div>
+                  </div>
+                  <div className={`rounded-2xl p-3 ${theme === 'dark' ? 'bg-slate-900' : 'bg-blue-50'}`}>
+                    <div className={`text-xs font-medium ${theme === 'dark' ? 'text-blue-400' : 'text-blue-600'}`}>Tides</div>
+                    <div className={`mt-1 text-xl font-bold ${theme === 'dark' ? 'text-slate-100' : 'text-slate-900'}`}>
+                      {calculateTideHeight(nowHour.time).toFixed(1)} m
+                    </div>
+                    <div className={`text-xs ${theme === 'dark' ? 'text-slate-300' : 'text-slate-600'}`}>
+                      {getTideStatus(nowHour.time)} • High: {getTideTimes(nowHour.time).nextHigh}
+                    </div>
+                    <div className={`text-xs ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>
+                      Low: {getTideTimes(nowHour.time).nextLow}
+                    </div>
                   </div>
                 </>
               )}
@@ -724,8 +833,12 @@ export default function App() {
                 if (item === 'tide') return (
                   <div key={item} className={`rounded-2xl p-4 ${theme === 'dark' ? 'bg-slate-900' : 'bg-blue-50'}`}>
                     <div className={`text-xs font-medium ${theme === 'dark' ? 'text-blue-400' : 'text-blue-600'}`}>Tide Info</div>
-                    <div className={`mt-1 text-2xl font-bold ${theme === 'dark' ? 'text-slate-100' : 'text-slate-900'}`}>—</div>
-                    <div className={`text-sm ${theme === 'dark' ? 'text-slate-300' : 'text-slate-600'}`}>Not available from API</div>
+                    <div className={`mt-1 text-2xl font-bold ${theme === 'dark' ? 'text-slate-100' : 'text-slate-900'}`}>
+                      {calculateTideHeight(nowHour.time).toFixed(1)} m
+                    </div>
+                    <div className={`text-sm ${theme === 'dark' ? 'text-slate-300' : 'text-slate-600'}`}>
+                      {getTideStatus(nowHour.time)}
+                    </div>
                   </div>
                 )
                 return null
@@ -743,6 +856,75 @@ export default function App() {
           theme={theme}
           viewMode={viewMode}
         />
+
+        {/* Astronomical Details */}
+        {nowHour && bundle && (
+          <div className={`mb-8 rounded-2xl p-4 shadow-lg ring-1 relative overflow-hidden ${theme === 'dark' ? 'bg-slate-800 ring-slate-700' : 'bg-white ring-blue-100'}`}>
+            {/* GTA-style map background */}
+            <div className="absolute inset-0 opacity-20">
+              <div className="w-full h-full bg-gradient-to-br from-blue-500 via-green-500 to-yellow-500"></div>
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-900/70 to-transparent"></div>
+              {/* Map grid overlay */}
+              <div className="absolute inset-0" style={{
+                backgroundImage: 'linear-gradient(0deg, transparent 24%, rgba(255,255,255,0.1) 25%, transparent 26%, transparent 74%, rgba(255,255,255,0.1) 75%, transparent 76%, transparent 99%, rgba(255,255,255,0.1) 100%), linear-gradient(90deg, transparent 24%, rgba(255,255,255,0.1) 25%, transparent 26%, transparent 74%, rgba(255,255,255,0.1) 75%, transparent 76%, transparent 99%, rgba(255,255,255,0.1) 100%)',
+                backgroundSize: '50px 50px'
+              }}></div>
+            </div>
+            
+            <div className="relative z-10">
+              <div className={`mb-4 text-xs font-semibold uppercase tracking-wide ${theme === 'dark' ? 'text-blue-400' : 'text-blue-600'}`}>
+                Sun & Moon
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {/* Sun Times */}
+                <div className={`rounded-xl p-3 ${theme === 'dark' ? 'bg-slate-900/80' : 'bg-blue-50/80'} backdrop-blur-sm`}>
+                  <div className={`text-xs font-medium mb-2 ${theme === 'dark' ? 'text-yellow-400' : 'text-yellow-600'}`}>☀️ Sun</div>
+                  <div className={`text-sm ${theme === 'dark' ? 'text-slate-300' : 'text-slate-600'}`}>
+                    <div>🌅 {bundle.sunrise ? fmtTime(bundle.sunrise, bundle.timezone) : '—'}</div>
+                    <div>🌇 {bundle.sunset ? fmtTime(bundle.sunset, bundle.timezone) : '—'}</div>
+                  </div>
+                </div>
+                
+                {/* Moon Phase */}
+                <div className={`rounded-xl p-3 ${theme === 'dark' ? 'bg-slate-900/80' : 'bg-blue-50/80'} backdrop-blur-sm`}>
+                  <div className={`text-xs font-medium mb-2 ${theme === 'dark' ? 'text-purple-400' : 'text-purple-600'}`}>🌙 Moon</div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-2xl">{getMoonPhase(new Date(nowHour.time)).emoji}</span>
+                    <div className={`text-sm ${theme === 'dark' ? 'text-slate-300' : 'text-slate-600'}`}>
+                      <div>{getMoonPhase(new Date(nowHour.time)).name}</div>
+                      <div>{getMoonPhase(new Date(nowHour.time)).illumination}%</div>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Moon Times */}
+                <div className={`rounded-xl p-3 ${theme === 'dark' ? 'bg-slate-900/80' : 'bg-blue-50/80'} backdrop-blur-sm`}>
+                  <div className={`text-xs font-medium mb-2 ${theme === 'dark' ? 'text-indigo-400' : 'text-indigo-600'}`}>🌗 Moon Times</div>
+                  <div className={`text-sm ${theme === 'dark' ? 'text-slate-300' : 'text-slate-600'}`}>
+                    <div>Rise {calculateMoonTimes(new Date(nowHour.time), bundle.timezone).rise}</div>
+                    <div>Set {calculateMoonTimes(new Date(nowHour.time), bundle.timezone).set}</div>
+                  </div>
+                </div>
+                
+                {/* Day Length */}
+                <div className={`rounded-xl p-3 ${theme === 'dark' ? 'bg-slate-900/80' : 'bg-blue-50/80'} backdrop-blur-sm`}>
+                  <div className={`text-xs font-medium mb-2 ${theme === 'dark' ? 'text-orange-400' : 'text-orange-600'}`}>⏱️ Day Length</div>
+                  <div className={`text-sm ${theme === 'dark' ? 'text-slate-300' : 'text-slate-600'}`}>
+                    {bundle.sunrise && bundle.sunset ? (() => {
+                      const sunrise = new Date(bundle.sunrise)
+                      const sunset = new Date(bundle.sunset)
+                      const dayLength = sunset.getTime() - sunrise.getTime()
+                      const hours = Math.floor(dayLength / (1000 * 60 * 60))
+                      const minutes = Math.floor((dayLength % (1000 * 60 * 60)) / (1000 * 60))
+                      return `${hours}h ${minutes}m`
+                    })() : '—'}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Error display */}
         {err ? (

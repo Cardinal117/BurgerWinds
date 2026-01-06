@@ -1,11 +1,16 @@
-export type WindUnit = 'kmh' | 'kts'
+export type WindUnit = 'kmh' | 'kts' | 'mps'
 
 export function kmhToKts(kmh: number): number {
   return kmh / 1.852
 }
 
+export function kmhToMps(kmh: number): number {
+  return kmh / 3.6
+}
+
 export function formatWindSpeed(valueKmh: number, unit: WindUnit): string {
   if (unit === 'kts') return `${Math.round(kmhToKts(valueKmh))} kt`
+  if (unit === 'mps') return `${Math.round(kmhToMps(valueKmh))} m/s`
   return `${Math.round(valueKmh)} km/h`
 }
 
