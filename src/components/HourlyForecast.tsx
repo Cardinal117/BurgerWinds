@@ -1,19 +1,37 @@
 import React, { useMemo, useState } from 'react'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area, ReferenceLine } from 'recharts'
 import { ForecastHour, ForecastBundle } from '../lib/openMeteo'
-import { formatWindSpeed, degToCompass, fmtTime, fmtDay, WindUnit } from '../lib/format'
-import { TrendingUp, Table, Calendar } from 'lucide-react'
+import { formatWindSpeed, degToCompass, fmtTime, fmtDay, WindUnit, TemperatureUnit, formatTemperature, celsiusToFahrenheit, celsiusToKelvin } from '../lib/format'
+import { TrendingUp, Table, Calendar, Settings } from 'lucide-react'
+import { WaveCompass } from './WaveCompass'
 
 interface HourlyForecastProps {
   bundle: ForecastBundle | null
   hourlyFilter: '6h' | '24h' | '7d'
   onHourlyFilterChange: (filter: '6h' | '24h' | '7d') => void
   unit: WindUnit
+  temperatureUnit: TemperatureUnit
+  onTemperatureUnitChange: (unit: TemperatureUnit) => void
   theme: 'light' | 'dark'
   viewMode: 'casual' | 'surfer' | 'everything' | 'custom'
+  location: { id: string; name: string; lat: number; lon: number }
+  savedLocations: { items: { id: string; name: string; lat: number; lon: number }[] }
+  onLocationChange: (location: { id: string; name: string; lat: number; lon: number }) => void
 }
 
-export function HourlyForecast({ bundle, hourlyFilter, onHourlyFilterChange, unit, theme, viewMode }: HourlyForecastProps) {
+export function HourlyForecast({ 
+  bundle, 
+  hourlyFilter, 
+  onHourlyFilterChange, 
+  unit, 
+  temperatureUnit,
+  onTemperatureUnitChange,
+  theme, 
+  viewMode,
+  location,
+  savedLocations,
+  onLocationChange
+}: HourlyForecastProps) {
   const [selectedDay, setSelectedDay] = useState(0)
   const [showGraphs, setShowGraphs] = useState(viewMode === 'surfer')
 
@@ -105,6 +123,10 @@ const getTideColor = (height: number) => {
   return 'text-orange-500'
 }
 
+const getTideStatusColor = (status: string) => {
+  return status === 'High' ? 'text-red-500' : status === 'Low' ? 'text-blue-500' : 'text-green-500'
+}
+
 // Tide calculation functions
 function calculateTideHeight(time: string): number {
   const date = new Date(time)
@@ -137,73 +159,74 @@ function getTideStatus(time: string): string {
 
   return (
     <section className="mb-8">
-      <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h2 className={`text-lg font-semibold ${theme === 'dark' ? 'text-slate-100' : 'text-slate-900'}`}>Hourly Forecast</h2>
-          <p className={`text-sm ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>
-            {selectedDay > 0 ? availableDays[selectedDay]?.label : 
-             hourlyFilter === '6h' ? 'Next 6 hours' : 
-             hourlyFilter === '24h' ? 'Next 24 hours' : 'Next 7 days'}
-          </p>
-        </div>
-        
-        <div className="flex flex-wrap gap-2">
-          {/* Day selector dropdown */}
-          {availableDays.length > 1 && (
-            <div className={`inline-flex rounded-xl border p-1 ${theme === 'dark' ? 'border-slate-700 bg-slate-800' : 'border-slate-200 bg-white'}`}>
-              <button
-                onClick={() => setSelectedDay(0)}
-                className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                  selectedDay === 0
-                    ? theme === 'dark' ? 'bg-blue-600 text-white' : 'bg-blue-500 text-white'
-                    : theme === 'dark' ? 'text-slate-300 hover:bg-slate-700' : 'text-slate-600 hover:bg-slate-100'
-                }`}
-              >
-                All
-              </button>
-              {availableDays.map((day: any, index: number) => (
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div className="min-w-0 flex-1">
+                <div className={`text-xs font-semibold uppercase tracking-wide ${theme === 'dark' ? 'text-blue-400' : 'text-blue-600'}`}>Hourly Forecast</div>
+                <p className={`text-sm ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>
+                  {selectedDay > 0 && availableDays[selectedDay - 1] ? (
+                    <>Selected: {availableDays[selectedDay - 1].label}</>
+                  ) : (
+                    hourlyFilter === '6h' ? 'Next 6 hours' : 
+                    hourlyFilter === '24h' ? 'Next 24 hours' : 'Next 7 days'
+                  )}
+                </p>
+              </div>
+              
+              {/* View Mode Toggle */}
+              <div className="flex gap-2">
                 <button
-                  key={index}
-                  onClick={() => setSelectedDay(index + 1)}
+                  onClick={() => setShowGraphs(false)}
+                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    !showGraphs
+                      ? theme === 'dark' ? 'bg-blue-600 text-white' : 'bg-blue-500 text-white'
+                      : theme === 'dark' ? 'bg-slate-700 text-slate-300' : 'bg-slate-200 text-slate-700'
+                  }`}
+                >
+                  <Table size={14} className="inline mr-1" />
+                  Table
+                </button>
+                <button
+                  onClick={() => setShowGraphs(true)}
+                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    showGraphs
+                      ? theme === 'dark' ? 'bg-blue-600 text-white' : 'bg-blue-500 text-white'
+                      : theme === 'dark' ? 'bg-slate-700 text-slate-300' : 'bg-slate-200 text-slate-700'
+                  }`}
+                >
+                  <TrendingUp size={14} className="inline mr-1" />
+                  Graphs
+                </button>
+              </div>
+            </div>
+
+            {/* Day selector dropdown */}
+            {availableDays.length > 1 && (
+              <div className={`inline-flex rounded-xl border p-1 ${theme === 'dark' ? 'border-slate-700 bg-slate-800' : 'border-slate-200 bg-white'}`}>
+                <button
+                  onClick={() => setSelectedDay(0)}
                   className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                    selectedDay === index + 1
+                    selectedDay === 0
                       ? theme === 'dark' ? 'bg-blue-600 text-white' : 'bg-blue-500 text-white'
                       : theme === 'dark' ? 'text-slate-300 hover:bg-slate-700' : 'text-slate-600 hover:bg-slate-100'
                   }`}
                 >
-                  {day.label.split(' ')[0]}
+                  All
                 </button>
-              ))}
-            </div>
-          )}
-          
-          {/* View mode toggle */}
-          <div className={`inline-flex rounded-xl border p-1 ${theme === 'dark' ? 'border-slate-700 bg-slate-800' : 'border-slate-200 bg-white'}`}>
-            <button
-              onClick={() => setShowGraphs(false)}
-              className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors flex items-center gap-1 ${
-                !showGraphs
-                  ? theme === 'dark' ? 'bg-blue-600 text-white' : 'bg-blue-500 text-white'
-                  : theme === 'dark' ? 'text-slate-300 hover:bg-slate-700' : 'text-slate-600 hover:bg-slate-100'
-              }`}
-            >
-              <Table size={14} />
-              Table
-            </button>
-            <button
-              onClick={() => setShowGraphs(true)}
-              className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors flex items-center gap-1 ${
-                showGraphs
-                  ? theme === 'dark' ? 'bg-blue-600 text-white' : 'bg-blue-500 text-white'
-                  : theme === 'dark' ? 'text-slate-300 hover:bg-slate-700' : 'text-slate-600 hover:bg-slate-100'
-              }`}
-            >
-              <TrendingUp size={14} />
-              Graphs
-            </button>
-          </div>
-        </div>
-      </div>
+                {availableDays.map((day: any, index: number) => (
+                  <button
+                    key={index}
+                    onClick={() => setSelectedDay(index + 1)}
+                    className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                      selectedDay === index + 1
+                        ? theme === 'dark' ? 'bg-blue-600 text-white' : 'bg-blue-500 text-white'
+                        : theme === 'dark' ? 'text-slate-300 hover:bg-slate-700' : 'text-slate-600 hover:bg-slate-100'
+                    }`}
+                  >
+                    {day.label.split(' ')[0]}
+                  </button>
+                ))}
+              </div>
+            )}
 
       {/* Conditional rendering: Table or Graphs */}
       {showGraphs ? (
@@ -215,10 +238,10 @@ function getTideStatus(time: string): string {
             </h3>
             <ResponsiveContainer width="100%" height={300}>
               <AreaChart data={hoursToShow.map((hour: ForecastHour) => ({
-                time: fmtTime(hour.time, bundle.timezone),
-                windSpeed: hour.windSpeed10mKmh,
-                temperature: hour.temperatureC,
-                humidity: hour.humidityPct,
+                time: fmtTime(hour.time, bundle?.timezone || 'UTC'),
+                windSpeed: Math.round(hour.windSpeed10mKmh * 100) / 100,
+                temperature: Math.round(hour.temperatureC * 100) / 100,
+                humidity: Math.round(hour.humidityPct * 100) / 100,
                 isCurrentHour: Math.abs(new Date(hour.time).getTime() - Date.now()) < 30 * 60 * 1000
               }))}>
                 <CartesianGrid strokeDasharray="3 3" stroke={theme === 'dark' ? '#475569' : '#e2e8f0'} />
@@ -239,8 +262,8 @@ function getTideStatus(time: string): string {
                   }}
                   labelStyle={{ color: theme === 'dark' ? '#f1f5f9' : '#0f172a' }}
                   formatter={(value: any, name?: string) => {
-                    if (name === 'windSpeed') return [`${value} ${unit}`, 'Wind Speed']
-                    return [value, name]
+                    if (name === 'windSpeed') return [`${Math.round(value * 100) / 100} ${unit}`, 'Wind Speed']
+                    return [`${Math.round(value * 100) / 100}`, name]
                   }}
                 />
                 <Area 
@@ -254,7 +277,7 @@ function getTideStatus(time: string): string {
                 {/* Current hour indicator */}
                 {hoursToShow.some((hour: ForecastHour) => Math.abs(new Date(hour.time).getTime() - Date.now()) < 30 * 60 * 1000) && (
                   <ReferenceLine 
-                    x={hoursToShow.find((hour: ForecastHour) => Math.abs(new Date(hour.time).getTime() - Date.now()) < 30 * 60 * 1000)?.time && fmtTime(hoursToShow.find((hour: ForecastHour) => Math.abs(new Date(hour.time).getTime() - Date.now()) < 30 * 60 * 1000)!.time, bundle.timezone)} 
+                    x={hoursToShow.find((hour: ForecastHour) => Math.abs(new Date(hour.time).getTime() - Date.now()) < 30 * 60 * 1000)?.time && fmtTime(hoursToShow.find((hour: ForecastHour) => Math.abs(new Date(hour.time).getTime() - Date.now()) < 30 * 60 * 1000)!.time, bundle?.timezone || 'UTC')} 
                     stroke="#3b82f6" 
                     strokeWidth={2}
                     strokeDasharray="5 5"
@@ -265,15 +288,82 @@ function getTideStatus(time: string): string {
             </ResponsiveContainer>
           </div>
 
+          {/* Wave Height Chart */}
+          {(viewMode === 'surfer' || viewMode === 'everything') && (
+            <div className={`overflow-hidden rounded-2xl border ${theme === 'dark' ? 'border-slate-700 bg-slate-800' : 'border-slate-200 bg-white'} p-4`}>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className={`text-lg font-semibold ${theme === 'dark' ? 'text-slate-100' : 'text-slate-900'}`}>
+                  Wave Height
+                </h3>
+                {bundle && bundle.hours && bundle.hours.find((hour) => Math.abs(new Date(hour.time).getTime() - Date.now()) < 30 * 60 * 1000) && (
+                  <WaveCompass 
+                    direction={bundle.hours.find((hour) => Math.abs(new Date(hour.time).getTime() - Date.now()) < 30 * 60 * 1000)?.waveDirectionDeg || 0} 
+                    theme={theme} 
+                    size="small" 
+                  />
+                )}
+              </div>
+              <ResponsiveContainer width="100%" height={250}>
+                <LineChart data={hoursToShow.map((hour: ForecastHour) => ({
+                  time: fmtTime(hour.time, bundle?.timezone || 'UTC'),
+                  waveHeight: Math.round((hour.waveHeightM || 0) * 100) / 100,
+                  isCurrentHour: Math.abs(new Date(hour.time).getTime() - Date.now()) < 30 * 60 * 1000
+                }))}>
+                  <CartesianGrid strokeDasharray="3 3" stroke={theme === 'dark' ? '#475569' : '#e2e8f0'} />
+                  <XAxis 
+                    dataKey="time" 
+                    stroke={theme === 'dark' ? '#94a3b8' : '#64748b'}
+                    tick={{ fill: theme === 'dark' ? '#94a3b8' : '#64748b', fontSize: 12 }}
+                  />
+                  <YAxis 
+                    stroke={theme === 'dark' ? '#94a3b8' : '#64748b'}
+                    tick={{ fill: theme === 'dark' ? '#94a3b8' : '#64748b', fontSize: 12 }}
+                  />
+                  <Tooltip 
+                    contentStyle={{
+                      backgroundColor: theme === 'dark' ? '#1e293b' : '#ffffff',
+                      border: `1px solid ${theme === 'dark' ? '#475569' : '#e2e8f0'}`,
+                      borderRadius: '8px'
+                    }}
+                    labelStyle={{ color: theme === 'dark' ? '#f1f5f9' : '#0f172a' }}
+                    formatter={(value: any, name?: string) => {
+                      if (name === 'waveHeight') return [`${Math.round(value * 100) / 100}m`, 'Wave Height']
+                      return [`${Math.round(value * 100) / 100}`, name]
+                    }}
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="waveHeight" 
+                    stroke="#06b6d4" 
+                    strokeWidth={2}
+                    dot={{ fill: '#06b6d4', r: 3 }}
+                  />
+                  {/* Current hour indicator */}
+                  {hoursToShow.some((hour: ForecastHour) => Math.abs(new Date(hour.time).getTime() - Date.now()) < 30 * 60 * 1000) && (
+                    <ReferenceLine 
+                      x={hoursToShow.find((hour: ForecastHour) => Math.abs(new Date(hour.time).getTime() - Date.now()) < 30 * 60 * 1000)?.time && fmtTime(hoursToShow.find((hour: ForecastHour) => Math.abs(new Date(hour.time).getTime() - Date.now()) < 30 * 60 * 1000)!.time, bundle?.timezone || 'UTC')} 
+                      stroke="#06b6d4" 
+                      strokeWidth={2}
+                      strokeDasharray="5 5"
+                      label="Now"
+                    />
+                  )}
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+
           {/* Temperature Chart */}
           <div className={`overflow-hidden rounded-2xl border ${theme === 'dark' ? 'border-slate-700 bg-slate-800' : 'border-slate-200 bg-white'} p-4`}>
             <h3 className={`text-lg font-semibold mb-4 ${theme === 'dark' ? 'text-slate-100' : 'text-slate-900'}`}>
-              Temperature
+              Temperature ({temperatureUnit === 'celsius' ? '°C' : temperatureUnit === 'fahrenheit' ? '°F' : 'K'})
             </h3>
             <ResponsiveContainer width="100%" height={300}>
               <LineChart data={hoursToShow.map((hour: ForecastHour) => ({
-                time: fmtTime(hour.time, bundle.timezone),
-                temperature: hour.temperatureC,
+                time: fmtTime(hour.time, bundle?.timezone || 'UTC'),
+                temperature: temperatureUnit === 'fahrenheit' ? Math.round(celsiusToFahrenheit(hour.temperatureC) * 100) / 100 : 
+                            temperatureUnit === 'kelvin' ? Math.round(celsiusToKelvin(hour.temperatureC) * 100) / 100 :
+                            Math.round(hour.temperatureC * 100) / 100,
                 isCurrentHour: Math.abs(new Date(hour.time).getTime() - Date.now()) < 30 * 60 * 1000
               }))}>
                 <CartesianGrid strokeDasharray="3 3" stroke={theme === 'dark' ? '#475569' : '#e2e8f0'} />
@@ -294,8 +384,8 @@ function getTideStatus(time: string): string {
                   }}
                   labelStyle={{ color: theme === 'dark' ? '#f1f5f9' : '#0f172a' }}
                   formatter={(value: any, name?: string) => {
-                    if (name === 'temperature') return [`${value}°C`, 'Temperature']
-                    return [value, name]
+                    if (name === 'temperature') return [`${Math.round(value * 100) / 100}${temperatureUnit === 'celsius' ? '°C' : temperatureUnit === 'fahrenheit' ? '°F' : 'K'}`, 'Temperature']
+                    return [`${Math.round(value * 100) / 100}`, name]
                   }}
                 />
                 <Line 
@@ -308,8 +398,126 @@ function getTideStatus(time: string): string {
                 {/* Current hour indicator */}
                 {hoursToShow.some((hour: ForecastHour) => Math.abs(new Date(hour.time).getTime() - Date.now()) < 30 * 60 * 1000) && (
                   <ReferenceLine 
-                    x={hoursToShow.find((hour: ForecastHour) => Math.abs(new Date(hour.time).getTime() - Date.now()) < 30 * 60 * 1000)?.time && fmtTime(hoursToShow.find((hour: ForecastHour) => Math.abs(new Date(hour.time).getTime() - Date.now()) < 30 * 60 * 1000)!.time, bundle.timezone)} 
+                    x={hoursToShow.find((hour: ForecastHour) => Math.abs(new Date(hour.time).getTime() - Date.now()) < 30 * 60 * 1000)?.time && fmtTime(hoursToShow.find((hour: ForecastHour) => Math.abs(new Date(hour.time).getTime() - Date.now()) < 30 * 60 * 1000)!.time, bundle?.timezone || 'UTC')} 
                     stroke="#f97316" 
+                    strokeWidth={2}
+                    strokeDasharray="5 5"
+                    label="Now"
+                  />
+                )}
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* Humidity Chart */}
+          <div className={`overflow-hidden rounded-2xl border ${theme === 'dark' ? 'border-slate-700 bg-slate-800' : 'border-slate-200 bg-white'} p-4`}>
+            <h3 className={`text-lg font-semibold mb-4 ${theme === 'dark' ? 'text-slate-100' : 'text-slate-900'}`}>
+              Humidity
+            </h3>
+            <ResponsiveContainer width="100%" height={250}>
+              <AreaChart data={hoursToShow.map((hour: ForecastHour) => ({
+                time: fmtTime(hour.time, bundle?.timezone || 'UTC'),
+                humidity: Math.round(hour.humidityPct * 100) / 100,
+                isCurrentHour: Math.abs(new Date(hour.time).getTime() - Date.now()) < 30 * 60 * 1000
+              }))}>
+                <CartesianGrid strokeDasharray="3 3" stroke={theme === 'dark' ? '#475569' : '#e2e8f0'} />
+                <XAxis 
+                  dataKey="time" 
+                  stroke={theme === 'dark' ? '#94a3b8' : '#64748b'}
+                  tick={{ fill: theme === 'dark' ? '#94a3b8' : '#64748b', fontSize: 12 }}
+                />
+                <YAxis 
+                  stroke={theme === 'dark' ? '#94a3b8' : '#64748b'}
+                  tick={{ fill: theme === 'dark' ? '#94a3b8' : '#64748b', fontSize: 12 }}
+                />
+                <Tooltip 
+                  contentStyle={{
+                    backgroundColor: theme === 'dark' ? '#1e293b' : '#ffffff',
+                    border: `1px solid ${theme === 'dark' ? '#475569' : '#e2e8f0'}`,
+                    borderRadius: '8px'
+                  }}
+                  labelStyle={{ color: theme === 'dark' ? '#f1f5f9' : '#0f172a' }}
+                  formatter={(value: any, name?: string) => {
+                    if (name === 'humidity') return [`${Math.round(value * 100) / 100}%`, 'Humidity']
+                    return [`${Math.round(value * 100) / 100}`, name]
+                  }}
+                />
+                <Area 
+                  type="monotone" 
+                  dataKey="humidity" 
+                  stroke="#06b6d4" 
+                  fill="#06b6d4" 
+                  fillOpacity={0.3}
+                  strokeWidth={2}
+                />
+                {/* Current hour indicator */}
+                {hoursToShow.some((hour: ForecastHour) => Math.abs(new Date(hour.time).getTime() - Date.now()) < 30 * 60 * 1000) && (
+                  <ReferenceLine 
+                    x={hoursToShow.find((hour: ForecastHour) => Math.abs(new Date(hour.time).getTime() - Date.now()) < 30 * 60 * 1000)?.time && fmtTime(hoursToShow.find((hour: ForecastHour) => Math.abs(new Date(hour.time).getTime() - Date.now()) < 30 * 60 * 1000)!.time, bundle?.timezone || 'UTC')} 
+                    stroke="#06b6d4" 
+                    strokeWidth={2}
+                    strokeDasharray="5 5"
+                    label="Now"
+                  />
+                )}
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* Tide Chart */}
+          <div className={`overflow-hidden rounded-2xl border ${theme === 'dark' ? 'border-slate-700 bg-slate-800' : 'border-slate-200 bg-white'} p-4`}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className={`text-lg font-semibold ${theme === 'dark' ? 'text-slate-100' : 'text-slate-900'}`}>
+                Tide Height
+              </h3>
+              {bundle && bundle.hours && bundle.hours.find((hour) => Math.abs(new Date(hour.time).getTime() - Date.now()) < 30 * 60 * 1000) && (
+                <WaveCompass 
+                  direction={bundle.hours.find((hour) => Math.abs(new Date(hour.time).getTime() - Date.now()) < 30 * 60 * 1000)?.waveDirectionDeg || 0} 
+                  theme={theme} 
+                  size="small" 
+                />
+              )}
+            </div>
+            <ResponsiveContainer width="100%" height={250}>
+              <LineChart data={hoursToShow.map((hour: ForecastHour) => ({
+                time: fmtTime(hour.time, bundle?.timezone || 'UTC'),
+                tideHeight: Math.round(calculateTideHeight(hour.time) * 100) / 100,
+                isCurrentHour: Math.abs(new Date(hour.time).getTime() - Date.now()) < 30 * 60 * 1000
+              }))}>
+                <CartesianGrid strokeDasharray="3 3" stroke={theme === 'dark' ? '#475569' : '#e2e8f0'} />
+                <XAxis 
+                  dataKey="time" 
+                  stroke={theme === 'dark' ? '#94a3b8' : '#64748b'}
+                  tick={{ fill: theme === 'dark' ? '#94a3b8' : '#64748b', fontSize: 12 }}
+                />
+                <YAxis 
+                  stroke={theme === 'dark' ? '#94a3b8' : '#64748b'}
+                  tick={{ fill: theme === 'dark' ? '#94a3b8' : '#64748b', fontSize: 12 }}
+                />
+                <Tooltip 
+                  contentStyle={{
+                    backgroundColor: theme === 'dark' ? '#1e293b' : '#ffffff',
+                    border: `1px solid ${theme === 'dark' ? '#475569' : '#e2e8f0'}`,
+                    borderRadius: '8px'
+                  }}
+                  labelStyle={{ color: theme === 'dark' ? '#f1f5f9' : '#0f172a' }}
+                  formatter={(value: any, name?: string) => {
+                    if (name === 'tideHeight') return [`${Math.round(value * 100) / 100}m`, 'Tide Height']
+                    return [`${Math.round(value * 100) / 100}`, name]
+                  }}
+                />
+                <Line 
+                  type="monotone" 
+                  dataKey="tideHeight" 
+                  stroke="#8b5cf6" 
+                  strokeWidth={2}
+                  dot={{ fill: '#8b5cf6', r: 3 }}
+                />
+                {/* Current hour indicator */}
+                {hoursToShow.some((hour: ForecastHour) => Math.abs(new Date(hour.time).getTime() - Date.now()) < 30 * 60 * 1000) && (
+                  <ReferenceLine 
+                    x={hoursToShow.find((hour: ForecastHour) => Math.abs(new Date(hour.time).getTime() - Date.now()) < 30 * 60 * 1000)?.time && fmtTime(hoursToShow.find((hour: ForecastHour) => Math.abs(new Date(hour.time).getTime() - Date.now()) < 30 * 60 * 1000)!.time, bundle?.timezone || 'UTC')} 
+                    stroke="#8b5cf6" 
                     strokeWidth={2}
                     strokeDasharray="5 5"
                     label="Now"
@@ -323,11 +531,10 @@ function getTideStatus(time: string): string {
         /* Table-like layout */
         <div className={`overflow-hidden rounded-2xl border ${theme === 'dark' ? 'border-slate-700 bg-slate-800' : 'border-slate-200 bg-white'}`}>
         {/* Header */}
-        <div className={`grid grid-cols-9 gap-2 sm:gap-4 border-b p-2 sm:p-3 text-xs font-semibold uppercase tracking-wide text-center ${
+        <div className={`grid grid-cols-8 gap-2 sm:gap-4 border-b p-2 sm:p-3 text-xs font-semibold uppercase tracking-wide text-center ${
           theme === 'dark' ? 'border-slate-700 text-blue-400' : 'border-slate-200 text-blue-600'
         }`}>
           <div className="text-center">Time</div>
-          <div className="text-center">Date</div>
           {viewMode === 'surfer' ? <div className="text-center">Temp</div> : <div className="text-center">Temp</div>}
           {viewMode !== 'surfer' && <div className="text-center">Weather</div>}
           <div className="text-center">Wind</div>
@@ -346,7 +553,7 @@ function getTideStatus(time: string): string {
             return (
               <div
                 key={hour.time}
-                className={`grid grid-cols-9 gap-2 sm:gap-4 border-b p-2 sm:p-3 text-xs sm:text-sm transition-colors hover:${
+                className={`grid grid-cols-8 gap-2 sm:gap-4 border-b p-2 sm:p-3 text-xs sm:text-sm transition-colors hover:${
                   theme === 'dark' ? 'bg-slate-700' : 'bg-blue-50'
                 } ${isCurrentHour
                   ? theme === 'dark'
@@ -363,17 +570,13 @@ function getTideStatus(time: string): string {
                       ? theme === 'dark' ? 'text-blue-300 font-bold' : 'text-blue-700 font-bold'
                       : theme === 'dark' ? 'text-slate-200' : 'text-slate-900'
                   }`}>
-                    {fmtTime(hour.time, bundle.timezone)}
+                    {fmtTime(hour.time, bundle?.timezone || 'UTC')}
                   </div>
                   {isCurrentHour && (
                     <span className="inline-flex items-center rounded-full bg-blue-500 px-1 sm:px-2 py-0.5 text-xs text-white mt-1 text-center justify-center">
                       Now
                     </span>
                   )}
-                </div>
-                <div className={`flex flex-col justify-center text-center ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>
-                  <span className="hidden sm:block">{isToday ? 'Today' : isTomorrow ? 'Tomorrow' : fmtDay(hour.time, bundle.timezone)}</span>
-                  <span className="sm:hidden">{isToday ? 'Tdy' : isTomorrow ? 'Tmw' : fmtDay(hour.time, bundle.timezone).slice(0, 3)}</span>
                 </div>
                 {viewMode === 'surfer' ? (
                   <div className={`font-medium text-center ${getTemperatureColor(hour.temperatureC)}`}>
@@ -429,8 +632,8 @@ function getTideStatus(time: string): string {
                 )}
                 <div className={`text-center ${getTideColor(calculateTideHeight(hour.time))}`}>
                   <div>{calculateTideHeight(hour.time).toFixed(1)}m</div>
-                  <div className="text-xs">
-                    {getTideStatus(hour.time)}
+                  <div className={`text-xs ${getTideStatusColor(getTideStatus(hour.time))}`}>
+                    {getTideStatus(hour.time)} • {calculateTideHeight(hour.time) < 1.0 ? 'Low' : calculateTideHeight(hour.time) > 1.5 ? 'High' : 'Normal'}
                   </div>
                 </div>
               </div>

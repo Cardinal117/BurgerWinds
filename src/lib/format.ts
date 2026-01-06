@@ -1,4 +1,5 @@
 export type WindUnit = 'kmh' | 'kts' | 'mps'
+export type TemperatureUnit = 'celsius' | 'fahrenheit' | 'kelvin'
 
 export function kmhToKts(kmh: number): number {
   return kmh / 1.852
@@ -8,10 +9,30 @@ export function kmhToMps(kmh: number): number {
   return kmh / 3.6
 }
 
+export function celsiusToFahrenheit(celsius: number): number {
+  return (celsius * 9/5) + 32
+}
+
+export function celsiusToKelvin(celsius: number): number {
+  return celsius + 273.15
+}
+
 export function formatWindSpeed(valueKmh: number, unit: WindUnit): string {
   if (unit === 'kts') return `${Math.round(kmhToKts(valueKmh))} kt`
   if (unit === 'mps') return `${Math.round(kmhToMps(valueKmh))} m/s`
   return `${Math.round(valueKmh)} km/h`
+}
+
+export function formatTemperature(valueCelsius: number, unit: TemperatureUnit): string {
+  if (unit === 'fahrenheit') return `${Math.round(celsiusToFahrenheit(valueCelsius))}°F`
+  if (unit === 'kelvin') return `${Math.round(celsiusToKelvin(valueCelsius))}K`
+  return `${Math.round(valueCelsius)}°C`
+}
+
+export function formatTemperatureForDisplay(valueCelsius: number, unit: TemperatureUnit): string {
+  if (unit === 'fahrenheit') return `${Math.round(celsiusToFahrenheit(valueCelsius))}°`
+  if (unit === 'kelvin') return `${Math.round(celsiusToKelvin(valueCelsius))}`
+  return `${Math.round(valueCelsius)}°`
 }
 
 export function degToCompass(deg: number): string {
