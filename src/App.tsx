@@ -7,7 +7,7 @@ import { FloatingButtons } from './components/FloatingButtons'
 import { LocationPanel } from './components/LocationPanel'
 import { NtfyPanel, NtfySettings } from './components/NtfyPanel'
 import { DiscordSettings } from './components/DiscordSettings'
-import { DiscordConfig } from './lib/discordService'
+import { DiscordConfig, DiscordNotificationService } from './lib/discordService'
 
 // Lazy load heavy components
 const HourlyForecast = lazy(() => import('./components/HourlyForecast').then(module => ({ default: module.HourlyForecast })))
@@ -277,9 +277,9 @@ function getWaterSurfaceDescription(waveHeightM?: number, windSpeedKmh?: number)
 
 function isSideOnshore(windDeg: number): boolean {
   if (windDeg == null || Number.isNaN(windDeg)) return false
-  // Simplified: assumes shore is roughly north for most spots
-  const normalized = ((windDeg + 360) % 360)
-  return (normalized >= 315 || normalized < 45) || (normalized >= 135 && normalized < 225)
+  // Side-onshore typically means wind coming from the side at roughly 45-135 degrees
+  // This is a simplified implementation - you may want to adjust based on your specific needs
+  return windDeg >= 45 && windDeg <= 135
 }
 
 async function sendToNtfy(message: string, topic: string) {
@@ -301,10 +301,9 @@ async function sendToNtfy(message: string, topic: string) {
 }
 
 function getViewModeSpecificMessage(bundle: ForecastBundle, nowHour: ForecastHour, unit: WindUnit, temperatureUnit: TemperatureUnit, viewMode: ViewMode): string {
-  const location = bundle.locationName
-  const time = fmtTime(nowHour.time, bundle.timezone)
-
   if (viewMode === 'surfer') {
+    const location = bundle.locationName
+    const time = fmtTime(nowHour.time, bundle.timezone)
     const wind = `${formatWindSpeed(nowHour.windSpeed10mKmh || 0, unit)} ${degToCompass(nowHour.windDirection10mDeg || 0)}`
     const windRating = getWindSurferRating(nowHour.windSpeed10mKmh || 0)
     const water = getWaterSurfaceDescription(nowHour.waveHeightM, nowHour.windSpeed10mKmh)
@@ -321,6 +320,8 @@ ${nowHour.waterTempC ? `💧 Water: ${nowHour.waterTempC.toFixed(1)}°C` : ''}`
   }
 
   if (viewMode === 'everything') {
+    const location = bundle.locationName
+    const time = fmtTime(nowHour.time, bundle.timezone)
     const wind = `${formatWindSpeed(nowHour.windSpeed10mKmh || 0, unit)} ${degToCompass(nowHour.windDirection10mDeg || 0)}`
     const gust = nowHour.windGusts10mKmh ? `Gust ${formatWindSpeed(nowHour.windGusts10mKmh, unit)}` : ''
     const temp = formatTemperatureForDisplay(nowHour.temperatureC || 0, temperatureUnit)
@@ -528,6 +529,46 @@ export default function App() {
 
     return () => clearInterval(interval)
   }, [ntfy.enabled, ntfy.topic, ntfy.schedule, bundle, nowHour, unit, viewMode])
+
+  // Discord notification function inside component to access state
+  const sendDiscordNotification = async (message: string, locationName: string) => {
+    try {
+      const discordService = new DiscordNotificationService({
+        webhookUrl: discordConfig.webhookUrl,
+        enabled: discordConfig.enabled,
+        username: 'WindGuru Bot'
+      })
+      
+      await discordService.sendWeatherAlert(message, locationName)
+      console.log('✅ Discord notification sent successfully')
+    } catch (e) {
+      console.error('Discord notification failed:', e)
+    }
+  }
+
+  // Discord scheduling
+  useEffect(() => {
+    if (!discordConfig.enabled || !discordConfig.webhookUrl || !bundle || !nowHour) return
+
+    const checkDiscordSchedule = () => {
+      const now = new Date()
+      const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`
+
+      // Use the same schedule as ntfy for Discord notifications
+      if (ntfy.schedule.includes(currentTime)) {
+        const message = getViewModeSpecificMessage(bundle, nowHour, unit, temperatureUnit, viewMode)
+        void sendDiscordNotification(message, bundle.locationName)
+      }
+    }
+
+    // Check every minute
+    const interval = setInterval(checkDiscordSchedule, 60000)
+
+    // Check immediately on load
+    checkDiscordSchedule()
+
+    return () => clearInterval(interval)
+  }, [discordConfig.enabled, discordConfig.webhookUrl, ntfy.schedule, bundle, nowHour, unit, temperatureUnit, viewMode])
 
   const condensedMessage = useMemo(() => {
     if (!bundle || !nowHour) return 'No data available'
