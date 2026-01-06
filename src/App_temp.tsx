@@ -204,6 +204,7 @@ export default function App() {
   const [showLocationPanel, setShowLocationPanel] = useState(false)
   const [showNtfyPanel, setShowNtfyPanel] = useState(false)
   const [showDiscordPanel, setShowDiscordPanel] = useState(false)
+  const [showArcReactor, setShowArcReactor] = useState(() => readJson('bw_arc_reactor', true))
 
   // Search state
   const [search, setSearch] = useState('')
@@ -264,6 +265,10 @@ export default function App() {
   useEffect(() => {
     writeJson('bw_discord_config', discordConfig)
   }, [discordConfig])
+
+  useEffect(() => {
+    writeJson('bw_arc_reactor', showArcReactor)
+  }, [showArcReactor])
 
   const refresh = useCallback(async () => {
     setLoading(true)
@@ -400,6 +405,8 @@ export default function App() {
           setShowLocationPanel={setShowLocationPanel}
           setShowNtfyPanel={setShowNtfyPanel}
           setShowDiscordPanel={setShowDiscordPanel}
+          showArcReactor={showArcReactor}
+          setShowArcReactor={setShowArcReactor}
         />
 
         {showDiscordPanel && (
