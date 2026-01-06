@@ -4,9 +4,12 @@ import App from './App'
 // import { WeatherProvider } from './contexts/WeatherContext'
 
 export function AppWithRouter() {
+  // Use basename for GitHub Pages, but not for development
+  const basename = import.meta.env.PROD ? '/BurgerWinds' : '/'
+  
   return (
     // <WeatherProvider>
-      <Router>
+      <Router basename={basename}>
         <Routes>
           <Route path="/" element={<App />} />
           {/* <Route path="/map" element={<MapPage />} /> */}
