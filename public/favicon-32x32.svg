@@ -1,0 +1,24 @@
+<!-- Simple 32x32 PNG favicon data URI (wind/wave theme) -->
+<!-- This is a minimal data URI for a blue wind-themed favicon -->
+<!-- For production, you'd want to convert the actual icon to PNG format -->
+
+<svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#60A5FA;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#2563EB;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="32" height="32" rx="6" fill="url(#grad)"/>
+  
+  <!-- Wind lines -->
+  <path d="M6 12 Q16 10, 26 12" stroke="white" stroke-width="2" fill="none" stroke-linecap="round"/>
+  <path d="M6 16 Q16 14, 26 16" stroke="white" stroke-width="2" fill="none" stroke-linecap="round"/>
+  <path d="M6 20 Q16 18, 26 20" stroke="white" stroke-width="2" fill="none" stroke-linecap="round"/>
+  
+  <!-- Center dot -->
+  <circle cx="16" cy="16" r="3" fill="white"/>
+  <circle cx="16" cy="16" r="1.5" fill="#2563EB"/>
+</svg>

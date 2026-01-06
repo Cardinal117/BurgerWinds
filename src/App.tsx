@@ -651,37 +651,7 @@ export default function App() {
                 ) : null}
               </div>
             </div>
-
             <div className="flex shrink-0 items-center gap-2">
-              <button
-                className={`rounded-full px-3 py-2 text-xs font-medium shadow-md hover:opacity-90 ${theme === 'dark'
-                  ? 'bg-green-700 text-green-200 ring-1 ring-green-600 hover:bg-green-600'
-                  : 'bg-green-500 text-white hover:bg-green-600'
-                  }`}
-                onClick={() => {
-                  const exists = savedLocations.items.some((l) => l.id === location.id)
-                  if (!exists) {
-                    setSavedLocations((s) => ({ items: [...s.items, location] }))
-                  }
-                }}
-                disabled={savedLocations.items.some((l) => l.id === location.id)}
-                title={savedLocations.items.some((l) => l.id === location.id) ? 'Location already saved' : 'Save current location'}
-              >
-                {savedLocations.items.some((l) => l.id === location.id) ? '✓ Saved' : '📌 Save'}
-              </button>
-              <select
-                value={viewMode}
-                onChange={(e) => setViewMode(e.target.value as ViewMode)}
-                className={`rounded-full px-3 py-2 text-xs font-medium shadow-md hover:opacity-90 outline-none ${theme === 'dark'
-                  ? 'bg-slate-700 text-slate-200 ring-1 ring-slate-600 hover:bg-slate-600'
-                  : 'bg-white text-slate-700 ring-1 ring-slate-200 hover:bg-slate-50'
-                  }`}
-              >
-                <option value="casual">Casual</option>
-                <option value="surfer">Wind Surfer</option>
-                <option value="everything">Everything</option>
-                <option value="custom">Custom</option>
-              </select>
               <select
                 value={unit}
                 onChange={(e) => setUnit(e.target.value as WindUnit)}
@@ -729,6 +699,26 @@ export default function App() {
             </div>
           </div>
         </header>
+
+        {/* Save Location Button - Below header for better mobile layout */}
+        <div className="mb-6 flex justify-center">
+          <button
+            className={`rounded-full px-4 py-2 text-sm font-medium shadow-md hover:opacity-90 ${theme === 'dark'
+              ? 'bg-green-700 text-green-200 ring-1 ring-green-600 hover:bg-green-600'
+              : 'bg-green-500 text-white hover:bg-green-600'
+              }`}
+            onClick={() => {
+              const exists = savedLocations.items.some((l) => l.id === location.id)
+              if (!exists) {
+                setSavedLocations((s) => ({ items: [...s.items, location] }))
+              }
+            }}
+            disabled={savedLocations.items.some((l) => l.id === location.id)}
+            title={savedLocations.items.some((l) => l.id === location.id) ? 'Location already saved' : 'Save current location'}
+          >
+            {savedLocations.items.some((l) => l.id === location.id) ? '✓ Location Saved' : '📌 Save Current Location'}
+          </button>
+        </div>
 
         {/* Loading state */}
         {loading && (
