@@ -256,13 +256,23 @@ function getTideStatus(time: string): string {
               Wind Speed ({unit})
             </h3>
             <ResponsiveContainer width="100%" height={300}>
-              <AreaChart data={hoursToShow.map((hour: ForecastHour) => ({
-                time: fmtTime(hour.time, bundle?.timezone || 'UTC'),
-                windSpeed: Math.round(hour.windSpeed10mKmh * 100) / 100,
-                temperature: Math.round(hour.temperatureC * 100) / 100,
-                humidity: Math.round(hour.humidityPct * 100) / 100,
-                isCurrentHour: Math.abs(new Date(hour.time).getTime() - Date.now()) < 30 * 60 * 1000
-              }))}>
+              <AreaChart data={hoursToShow.map((hour: ForecastHour) => {
+                let windSpeed = hour.windSpeed10mKmh
+                // Convert wind speed to the selected unit
+                if (unit === 'kts') {
+                  windSpeed = windSpeed / 1.852
+                } else if (unit === 'mps') {
+                  windSpeed = windSpeed / 3.6
+                }
+                
+                return {
+                  time: fmtTime(hour.time, bundle?.timezone || 'UTC'),
+                  windSpeed: Math.round(windSpeed * 100) / 100,
+                  temperature: Math.round(hour.temperatureC * 100) / 100,
+                  humidity: Math.round(hour.humidityPct * 100) / 100,
+                  isCurrentHour: Math.abs(new Date(hour.time).getTime() - Date.now()) < 30 * 60 * 1000
+                }
+              })}>
                 <CartesianGrid strokeDasharray="3 3" stroke={theme === 'dark' ? '#475569' : '#e2e8f0'} />
                 <XAxis 
                   dataKey="time" 

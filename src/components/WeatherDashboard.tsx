@@ -80,15 +80,25 @@ export function WeatherDashboard({ bundle, nowHour, theme, unit, onUnitChange, o
     return '❄️'
   }
 
-  const chartData = selectedDayData?.hours.map((hour: any) => ({
-    time: fmtTime(hour.time, bundle?.timezone || 'UTC'),
-    windSpeed: hour.windSpeed10mKmh,
-    temperature: hour.temperatureC,
-    humidity: hour.humidityPct,
-    waveHeight: hour.waveHeightM,
-    precipitation: hour.precipitationProbabilityPct,
-    tideHeight: calculateTideHeight(hour.time)
-  })) || []
+  const chartData = selectedDayData?.hours.map((hour: any) => {
+    let windSpeed = hour.windSpeed10mKmh
+    // Convert wind speed to the selected unit
+    if (unit === 'kts') {
+      windSpeed = windSpeed / 1.852
+    } else if (unit === 'mps') {
+      windSpeed = windSpeed / 3.6
+    }
+    
+    return {
+      time: fmtTime(hour.time, bundle?.timezone || 'UTC'),
+      windSpeed: windSpeed,
+      temperature: hour.temperatureC,
+      humidity: hour.humidityPct,
+      waveHeight: hour.waveHeightM,
+      precipitation: hour.precipitationProbabilityPct,
+      tideHeight: calculateTideHeight(hour.time)
+    }
+  }) || []
   
   if (!bundle || !nowHour) {
     return (
