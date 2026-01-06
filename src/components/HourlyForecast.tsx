@@ -170,7 +170,7 @@ function getTideStatus(time: string): string {
   if (nextHeight > currentHeight) {
     return 'Rising'
   } else {
-    return 'Falling'
+    return 'Lowering'
   }
 }
 
@@ -550,16 +550,16 @@ function getTideStatus(time: string): string {
         /* Table-like layout */
         <div className={`overflow-hidden rounded-2xl border ${theme === 'dark' ? 'border-slate-700 bg-slate-800' : 'border-slate-200 bg-white'}`}>
         {/* Header */}
-        <div className={`grid grid-cols-8 gap-2 sm:gap-4 border-b p-2 sm:p-3 text-xs font-semibold uppercase tracking-wide text-center ${
+        <div className={`flex flex-col sm:flex-row gap-2 sm:gap-4 border-b p-2 sm:p-3 text-xs font-semibold uppercase tracking-wide text-center ${
           theme === 'dark' ? 'border-slate-700 text-blue-400' : 'border-slate-200 text-blue-600'
         }`}>
-          <div className="text-center">Time</div>
-          {viewMode === 'surfer' ? <div className="text-center">Temp</div> : <div className="text-center">Temp</div>}
-          {viewMode !== 'surfer' && <div className="text-center">Weather</div>}
-          <div className="text-center">Wind</div>
-          {viewMode !== 'surfer' && <div className="text-center">Humidity</div>}
-          {(viewMode === 'surfer' || viewMode === 'everything') && <div className="text-center">Waves</div>}
-          <div className="text-center">Tides</div>
+          <div className="flex-1 text-center">Time</div>
+          <div className="flex-1 text-center">{viewMode === 'surfer' ? 'Temp' : 'Temp'}</div>
+          {viewMode !== 'surfer' && <div className="flex-1 text-center hidden sm:block">Weather</div>}
+          <div className="flex-1 text-center">Wind</div>
+          {viewMode !== 'surfer' && <div className="flex-1 text-center hidden sm:block">Humidity</div>}
+          {(viewMode === 'surfer' || viewMode === 'everything') && <div className="flex-1 text-center">Waves</div>}
+          <div className="flex-1 text-center">Tides</div>
         </div>
 
         {/* Rows */}
@@ -573,7 +573,7 @@ function getTideStatus(time: string): string {
               <div
                 key={hour.time}
                 data-current-hour={isCurrentHour}
-                className={`grid grid-cols-8 gap-2 sm:gap-4 border-b p-2 sm:p-3 text-xs sm:text-sm transition-colors hover:${
+                className={`flex flex-col sm:flex-row gap-2 sm:gap-4 border-b p-2 sm:p-3 text-xs sm:text-sm transition-colors hover:${
                   theme === 'dark' ? 'bg-slate-700' : 'bg-blue-50'
                 } ${isCurrentHour
                   ? theme === 'dark'
@@ -584,7 +584,7 @@ function getTideStatus(time: string): string {
                     : 'border-slate-200'
                 }`}
               >
-                <div className="flex flex-col justify-center">
+                <div className="flex flex-col justify-center flex-1">
                   <div className={`font-medium text-center ${
                     isCurrentHour
                       ? theme === 'dark' ? 'text-blue-300 font-bold' : 'text-blue-700 font-bold'
@@ -598,30 +598,40 @@ function getTideStatus(time: string): string {
                     </span>
                   )}
                 </div>
-                {viewMode === 'surfer' ? (
-                  <div className={`font-medium text-center ${getTemperatureColor(hour.temperatureC)}`}>
-                    <div>{Math.round(hour.temperatureC)}°</div>
-                    <div className={`text-xs ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>
-                      Feels like {Math.round(hour.temperatureC - (hour.windSpeed10mKmh > 10 ? 2 : 0))}°
-                    </div>
-                  </div>
-                ) : (
-                  <>
+                <div className="flex flex-col justify-center flex-1">
+                  {viewMode === 'surfer' ? (
                     <div className={`font-medium text-center ${getTemperatureColor(hour.temperatureC)}`}>
                       <div>{Math.round(hour.temperatureC)}°</div>
                       <div className={`text-xs ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>
                         Feels like {Math.round(hour.temperatureC - (hour.windSpeed10mKmh > 10 ? 2 : 0))}°
                       </div>
                     </div>
-                    <div className="text-center">
-                      <div className="text-xl sm:text-2xl mb-1">{getWeatherIcon(hour)}</div>
-                      <div className={`text-xs ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>
-                        {getWeatherCondition(hour)}
+                  ) : (
+                    <>
+                      <div className={`font-medium text-center ${getTemperatureColor(hour.temperatureC)}`}>
+                        <div>{Math.round(hour.temperatureC)}°</div>
+                        <div className={`text-xs ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>
+                          Feels like {Math.round(hour.temperatureC - (hour.windSpeed10mKmh > 10 ? 2 : 0))}°
+                        </div>
                       </div>
+                      <div className="text-center hidden sm:block flex-1">
+                        <div className="text-xl sm:text-2xl mb-1">{getWeatherIcon(hour)}</div>
+                        <div className={`text-xs ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>
+                          {getWeatherCondition(hour)}
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+                {viewMode !== 'surfer' && (
+                  <div className={`text-center hidden sm:block flex-1 ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>
+                    <div className="text-xl sm:text-2xl mb-1">{getWeatherIcon(hour)}</div>
+                    <div className={`text-xs ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>
+                      {getWeatherCondition(hour)}
                     </div>
-                  </>
+                  </div>
                 )}
-                <div className="text-center">
+                <div className="text-center flex-1">
                   <div className={`font-medium ${theme === 'dark' ? 'text-slate-200' : 'text-slate-900'}`}>
                     {formatWindSpeed(hour.windSpeed10mKmh, unit)}
                   </div>
@@ -631,12 +641,12 @@ function getTideStatus(time: string): string {
                   <div className="text-lg sm:text-xl">{getWindIcon(hour.windSpeed10mKmh)}</div>
                 </div>
                 {viewMode !== 'surfer' && (
-                  <div className={`text-center ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>
+                  <div className={`text-center hidden sm:block flex-1 ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>
                     {Math.round(hour.humidityPct)}%
                   </div>
                 )}
                 {(viewMode === 'surfer' || viewMode === 'everything') && (
-                  <div className={`text-center ${getWaveColor(hour.waveHeightM)}`}>
+                  <div className={`text-center flex-1 ${getWaveColor(hour.waveHeightM)}`}>
                     <div>{hour.waveHeightM ? `${hour.waveHeightM.toFixed(1)}m` : '—'}</div>
                     {hour.waterTempC && (
                       <div className="text-xs">
@@ -650,7 +660,7 @@ function getTideStatus(time: string): string {
                     )}
                   </div>
                 )}
-                <div className={`text-center ${getTideColor(calculateTideHeight(hour.time))}`}>
+                <div className={`text-center flex-1 ${getTideColor(calculateTideHeight(hour.time))}`}>
                   <div>{calculateTideHeight(hour.time).toFixed(1)}m</div>
                   <div className={`text-xs ${getTideStatusColor(getTideStatus(hour.time))}`}>
                     {getTideStatus(hour.time)} • {calculateTideHeight(hour.time) < 1.0 ? 'Low' : calculateTideHeight(hour.time) > 1.5 ? 'High' : 'Normal'}

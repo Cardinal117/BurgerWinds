@@ -154,7 +154,7 @@ function getTideStatus(time: string, latitude: number, longitude: number): strin
     if (nextHeight > currentHeight) {
       return 'Rising'
     } else {
-      return 'Falling'
+      return 'Lowering'
     }
   } catch {
     return 'Unknown'
@@ -618,92 +618,110 @@ export default function App() {
 
   return (
     <div className={`min-h-screen ${theme === 'dark' ? 'bg-slate-900 text-slate-100' : 'bg-gradient-to-br from-blue-50 to-white text-slate-900'}`}>
-      <div className="mx-auto w-full max-w-6xl px-4 pb-32 pt-6 md:px-6">
+      <div className="mx-auto w-full max-w-6xl px-3 pb-32 pt-4 sm:px-4 md:px-6">
         {/* Header with basics */}
-        <header className="mb-6">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div className="min-w-0 flex-1">
+        <header className="mb-4 sm:mb-6">
+          <div className="flex flex-col gap-3">
+            {/* App title and location */}
+            <div className="flex flex-col gap-2">
               <div className={`text-xs font-semibold uppercase tracking-wide ${theme === 'dark' ? 'text-blue-400' : 'text-blue-600'}`}>BurgerWinds</div>
-              <div className="flex items-center gap-2">
+              <select
+                value={location.id.toString()}
+                onChange={(e) => {
+                  const savedLoc = savedLocations.items.find(loc => loc.id.toString() === e.target.value)
+                  if (savedLoc) {
+                    setLocation(savedLoc)
+                  }
+                }}
+                className={`w-full rounded-lg px-3 py-2.5 text-sm font-medium shadow-md hover:opacity-90 outline-none cursor-pointer ${
+                  theme === 'dark'
+                    ? 'bg-slate-700 text-slate-200 ring-1 ring-slate-600 hover:bg-slate-600'
+                    : 'bg-white text-slate-700 ring-1 ring-slate-200 hover:bg-slate-50'
+                  }`}
+              >
+                <option value={location.id}>{location.name}</option>
+                {savedLocations.items.filter(loc => loc.id !== location.id).map((loc) => (
+                  <option key={loc.id} value={loc.id.toString()}>{loc.name}</option>
+                ))}
+              </select>
+              {bundle?.sunrise && bundle?.sunset ? (
+                <div className={`text-sm ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}>
+                  {fmtDay(bundle.sunrise, bundle.timezone)} • Sun {fmtTime(bundle.sunrise, bundle.timezone)}–{fmtTime(bundle.sunset, bundle.timezone)}
+                </div>
+              ) : null}
+            </div>
+
+            {/* Control buttons - stacked on mobile, row on larger screens */}
+            <div className="flex flex-wrap gap-2 sm:flex-nowrap sm:justify-between">
+              <div className="flex flex-wrap gap-2 sm:flex-nowrap">
                 <select
-                  value={location.id.toString()}
-                  onChange={(e) => {
-                    const savedLoc = savedLocations.items.find(loc => loc.id.toString() === e.target.value)
-                    if (savedLoc) {
-                      setLocation(savedLoc)
-                    }
-                  }}
-                  className={`rounded-lg px-3 py-2 text-sm font-medium shadow-md hover:opacity-90 outline-none cursor-pointer ${
-                    theme === 'dark'
-                      ? 'bg-slate-700 text-slate-200 ring-1 ring-slate-600 hover:bg-slate-600'
-                      : 'bg-white text-slate-700 ring-1 ring-slate-200 hover:bg-slate-50'
+                  value={viewMode}
+                  onChange={(e) => setViewMode(e.target.value as ViewMode)}
+                  className={`rounded-full px-3 py-2 text-xs font-medium shadow-md hover:opacity-90 outline-none flex-shrink-0 ${theme === 'dark'
+                    ? 'bg-slate-700 text-slate-200 ring-1 ring-slate-600 hover:bg-slate-600'
+                    : 'bg-white text-slate-700 ring-1 ring-slate-200 hover:bg-slate-50'
                     }`}
                 >
-                  <option value={location.id}>{location.name}</option>
-                  {savedLocations.items.filter(loc => loc.id !== location.id).map((loc) => (
-                    <option key={loc.id} value={loc.id.toString()}>{loc.name}</option>
-                  ))}
+                  <option value="casual">Casual</option>
+                  <option value="surfer">Wind Surfer</option>
+                  <option value="everything">Everything</option>
+                  <option value="custom">Custom</option>
                 </select>
-                {bundle?.sunrise && bundle?.sunset ? (
-                  <div className={`text-sm ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}>
-                    {fmtDay(bundle.sunrise, bundle.timezone)} • Sun {fmtTime(bundle.sunrise, bundle.timezone)}–{fmtTime(bundle.sunset, bundle.timezone)}
-                  </div>
-                ) : null}
+                <select
+                  value={unit}
+                  onChange={(e) => setUnit(e.target.value as WindUnit)}
+                  className={`rounded-full px-3 py-2 text-xs font-medium shadow-md hover:opacity-90 outline-none flex-shrink-0 ${theme === 'dark'
+                    ? 'bg-slate-700 text-slate-200 ring-1 ring-slate-600 hover:bg-slate-600'
+                    : 'bg-white text-slate-700 ring-1 ring-slate-200 hover:bg-slate-50'
+                    }`}
+                >
+                  <option value="kmh">km/h</option>
+                  <option value="kts">kts</option>
+                  <option value="mps">m/s</option>
+                </select>
+                <select
+                  value={temperatureUnit}
+                  onChange={(e) => setTemperatureUnit(e.target.value as TemperatureUnit)}
+                  className={`rounded-full px-3 py-2 text-xs font-medium shadow-md hover:opacity-90 outline-none flex-shrink-0 ${theme === 'dark'
+                    ? 'bg-slate-700 text-slate-200 ring-1 ring-slate-600 hover:bg-slate-600'
+                    : 'bg-white text-slate-700 ring-1 ring-slate-200 hover:bg-slate-50'
+                    }`}
+                >
+                  <option value="celsius">°C</option>
+                  <option value="fahrenheit">°F</option>
+                  <option value="kelvin">K</option>
+                </select>
               </div>
-            </div>
-            <div className="flex shrink-0 items-center gap-2">
-              <select
-                value={unit}
-                onChange={(e) => setUnit(e.target.value as WindUnit)}
-                className={`rounded-full px-3 py-2 text-xs font-medium shadow-md hover:opacity-90 outline-none ${theme === 'dark'
-                  ? 'bg-slate-700 text-slate-200 ring-1 ring-slate-600 hover:bg-slate-600'
-                  : 'bg-white text-slate-700 ring-1 ring-slate-200 hover:bg-slate-50'
-                  }`}
-              >
-                <option value="kmh">km/h</option>
-                <option value="kts">kts</option>
-                <option value="mps">m/s</option>
-              </select>
-              <select
-                value={temperatureUnit}
-                onChange={(e) => setTemperatureUnit(e.target.value as TemperatureUnit)}
-                className={`rounded-full px-3 py-2 text-xs font-medium shadow-md hover:opacity-90 outline-none ${theme === 'dark'
-                  ? 'bg-slate-700 text-slate-200 ring-1 ring-slate-600 hover:bg-slate-600'
-                  : 'bg-white text-slate-700 ring-1 ring-slate-200 hover:bg-slate-50'
-                  }`}
-              >
-                <option value="celsius">°C</option>
-                <option value="fahrenheit">°F</option>
-                <option value="kelvin">K</option>
-              </select>
-              <button
-                className={`rounded-full px-4 py-2 text-xs font-medium shadow-md hover:opacity-90 ${theme === 'dark'
-                  ? 'bg-slate-700 text-yellow-400 ring-1 ring-slate-600 hover:bg-slate-600'
-                  : 'bg-white text-blue-600 ring-1 ring-blue-200 hover:bg-blue-50'
-                  }`}
-                onClick={() => setTheme((t) => (t === 'light' ? 'dark' : 'light'))}
-                type="button"
-              >
-                {theme === 'light' ? '🌙' : '☀️'}
-              </button>
-              <button
-                className={`rounded-full px-4 py-2 text-xs font-medium shadow-md hover:opacity-90 ${theme === 'dark'
-                  ? 'bg-slate-700 text-slate-200 ring-1 ring-slate-600 hover:bg-slate-600'
-                  : 'bg-blue-600 text-white hover:bg-blue-700'
-                  }`}
-                onClick={() => void refresh()}
-                type="button"
-              >
-                {loading ? 'Loading…' : 'Refresh'}
-              </button>
+              <div className="flex gap-2">
+                <button
+                  className={`rounded-full px-3 py-2 text-xs font-medium shadow-md hover:opacity-90 flex-shrink-0 ${theme === 'dark'
+                    ? 'bg-slate-700 text-yellow-400 ring-1 ring-slate-600 hover:bg-slate-600'
+                    : 'bg-white text-blue-600 ring-1 ring-blue-200 hover:bg-blue-50'
+                    }`}
+                  onClick={() => setTheme((t) => (t === 'light' ? 'dark' : 'light'))}
+                  type="button"
+                >
+                  {theme === 'light' ? '🌙' : '☀️'}
+                </button>
+                <button
+                  className={`rounded-full px-3 py-2 text-xs font-medium shadow-md hover:opacity-90 flex-shrink-0 ${theme === 'dark'
+                    ? 'bg-slate-700 text-slate-200 ring-1 ring-slate-600 hover:bg-slate-600'
+                    : 'bg-blue-600 text-white hover:bg-blue-700'
+                    }`}
+                  onClick={() => void refresh()}
+                  type="button"
+                >
+                  {loading ? '⏳' : '🔄'}
+                </button>
+              </div>
             </div>
           </div>
         </header>
 
         {/* Save Location Button - Below header for better mobile layout */}
-        <div className="mb-6 flex justify-center">
+        <div className="mb-4 sm:mb-6">
           <button
-            className={`rounded-full px-4 py-2 text-sm font-medium shadow-md hover:opacity-90 ${theme === 'dark'
+            className={`w-full rounded-full px-4 py-3 text-sm font-medium shadow-md hover:opacity-90 ${theme === 'dark'
               ? 'bg-green-700 text-green-200 ring-1 ring-green-600 hover:bg-green-600'
               : 'bg-green-500 text-white hover:bg-green-600'
               }`}
@@ -797,7 +815,7 @@ export default function App() {
               </div>
             )}
 
-            <div className={`grid grid-cols-1 gap-4 ${viewMode === 'surfer' ? 'md:grid-cols-2 lg:grid-cols-3' : viewMode === 'custom' ? 'md:grid-cols-2 lg:grid-cols-4' : 'md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5'}`}>
+            <div className={`grid grid-cols-2 gap-3 sm:gap-4 ${viewMode === 'surfer' ? 'sm:grid-cols-2 lg:grid-cols-3' : viewMode === 'custom' ? 'sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' : 'sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'}`}>
               {viewMode !== 'custom' && (
                 <>
                   <div className={`rounded-2xl p-3 ${theme === 'dark' ? 'bg-slate-900' : 'bg-blue-50'}`}>
