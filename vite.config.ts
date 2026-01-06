@@ -11,14 +11,9 @@ export default defineConfig(({ command }) => ({
           // Vendor chunks
           'vendor-react': ['react', 'react-dom'],
           'vendor-charts': ['recharts'],
-          'vendor-icons': ['lucide-react'],
-          
-          // Feature chunks - separated to avoid circular dependencies
-          'chunk-forecast': ['./src/components/HourlyForecast'],
-          'chunk-panels': ['./src/components/LocationPanel', './src/components/NtfyPanel']
+          'vendor-icons': ['lucide-react']
         }
       }
-    },
-    chunkSizeWarningLimit: 600 // Reduce warning threshold
+    }
   }
 }))
