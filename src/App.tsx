@@ -107,29 +107,44 @@ function getWindSurferRating(windSpeedKmh: number): { rating: string; color: str
   return { rating: 'Strong+', color: 'text-red-600', range: '30+ km/h' }
 }
 
-// Tide calculation functions
-function calculateTideHeight(time: string): number {
+// Location-aware tide calculation functions
+function calculateTideHeight(time: string, latitude: number, longitude: number): number {
   if (!time) return 0
   try {
     const date = new Date(time)
     const hours = date.getUTCHours()
     const tidalPeriod = 12.42
-    const phase = (hours % tidalPeriod) / tidalPeriod * 2 * Math.PI
-    const meanTide = 1.1
-    const tideRange = 0.9
+    
+    // Use longitude to create location-specific tide offset
+    // Each 15 degrees of longitude ≈ 1 hour time difference for tides
+    const longitudeOffset = (longitude / 15) * 1.5 // Adjusted for tidal lag
+    const localHours = (hours + longitudeOffset) % 24
+    
+    const phase = (localHours % tidalPeriod) / tidalPeriod * 2 * Math.PI
+    
+    // Vary mean tide and range based on location (simplified)
+    const latitudeFactor = Math.abs(latitude) / 90 // 0 to 1
+    const meanTide = 1.1 + (latitudeFactor * 0.3) // 1.1 to 1.4
+    const tideRange = 0.9 + (latitudeFactor * 0.4) // 0.9 to 1.3
+    
     return meanTide + tideRange * Math.sin(phase - Math.PI / 2)
   } catch {
     return 0
   }
 }
 
-function getTideStatus(time: string): string {
+function getTideStatus(time: string, latitude: number, longitude: number): string {
   if (!time) return 'Unknown'
   try {
     const date = new Date(time)
     const hours = date.getUTCHours()
     const tidalPeriod = 12.42
-    const phase = (hours % tidalPeriod) / tidalPeriod * 2 * Math.PI
+    
+    // Use longitude to create location-specific tide offset
+    const longitudeOffset = (longitude / 15) * 1.5
+    const localHours = (hours + longitudeOffset) % 24
+    
+    const phase = (localHours % tidalPeriod) / tidalPeriod * 2 * Math.PI
 
     // Determine if tide is rising or falling
     const nextPhase = phase + 0.1
@@ -146,23 +161,51 @@ function getTideStatus(time: string): string {
   }
 }
 
-function getTideTimes(time: string): { nextHigh: string; nextLow: string } {
+function getTideTimes(time: string, latitude: number, longitude: number): { nextHigh: string; nextLow: string } {
   if (!time) return { nextHigh: '—', nextLow: '—' }
 
   try {
     const date = new Date(time)
     const hours = date.getUTCHours()
-    const tidalPeriod = 12.42
-
-    // Calculate next high tide (approximately 6am and 6pm)
-    const nextHighHour = Math.ceil((hours + 6) / 6) * 6 % 24
-    const nextLowHour = (nextHighHour + 6) % 24
-
+    
+    // Location-specific tide calculation based on longitude
+    // Each location has different tide patterns based on geography
+    const longitudeOffset = (longitude / 15) * 1.5
+    const localHours = (hours + longitudeOffset) % 24
+    
+    // Base high tide times vary by location (simplified model)
+    // Using longitude to create different tide patterns globally
+    const baseOffset = Math.floor((longitude + 180) / 30) % 12 // 0-11 based on longitude
+    const baseHighTideHours = [
+      (4 + baseOffset) % 24, 
+      (16 + baseOffset) % 24
+    ].sort((a, b) => a - b)
+    
+    // Find the next high tide
+    let nextHighHour = baseHighTideHours.find(h => h > localHours)
+    if (nextHighHour === undefined) {
+      // If no high tide left today, use tomorrow's first high tide
+      nextHighHour = baseHighTideHours[0] + 24
+    }
+    
+    // Low tide is approximately 6 hours and 15 minutes after high tide
+    let nextLowHour = nextHighHour + 6
+    let nextLowMinute = 15
+    
+    // Convert back to UTC by subtracting the longitude offset
+    const utcHighHour = (nextHighHour - longitudeOffset) % 24
+    const utcLowHour = (nextLowHour - longitudeOffset) % 24
+    
     const nextHigh = new Date(date)
-    nextHigh.setUTCHours(nextHighHour, 0, 0, 0)
+    nextHigh.setUTCHours(utcHighHour, 0, 0, 0)
+    
+    // If the next high tide has already passed today, move to tomorrow
+    if (utcHighHour <= hours) {
+      nextHigh.setUTCDate(nextHigh.getUTCDate() + 1)
+    }
 
-    const nextLow = new Date(date)
-    nextLow.setUTCHours(nextLowHour, 0, 0, 0)
+    const nextLow = new Date(nextHigh)
+    nextLow.setUTCHours(utcLowHour, nextLowMinute, 0, 0)
 
     return {
       nextHigh: fmtTime(nextHigh.toISOString(), 'UTC'),
@@ -610,6 +653,22 @@ export default function App() {
             </div>
 
             <div className="flex shrink-0 items-center gap-2">
+              <button
+                className={`rounded-full px-3 py-2 text-xs font-medium shadow-md hover:opacity-90 ${theme === 'dark'
+                  ? 'bg-green-700 text-green-200 ring-1 ring-green-600 hover:bg-green-600'
+                  : 'bg-green-500 text-white hover:bg-green-600'
+                  }`}
+                onClick={() => {
+                  const exists = savedLocations.items.some((l) => l.id === location.id)
+                  if (!exists) {
+                    setSavedLocations((s) => ({ items: [...s.items, location] }))
+                  }
+                }}
+                disabled={savedLocations.items.some((l) => l.id === location.id)}
+                title={savedLocations.items.some((l) => l.id === location.id) ? 'Location already saved' : 'Save current location'}
+              >
+                {savedLocations.items.some((l) => l.id === location.id) ? '✓ Saved' : '📌 Save'}
+              </button>
               <select
                 value={viewMode}
                 onChange={(e) => setViewMode(e.target.value as ViewMode)}
@@ -804,13 +863,13 @@ export default function App() {
                   <div className={`rounded-2xl p-3 ${theme === 'dark' ? 'bg-slate-900' : 'bg-blue-50'}`}>
                     <div className={`text-xs font-medium ${theme === 'dark' ? 'text-blue-400' : 'text-blue-600'}`}>Tides</div>
                     <div className={`mt-1 text-xl font-bold ${theme === 'dark' ? 'text-slate-100' : 'text-slate-900'}`}>
-                      {calculateTideHeight(nowHour.time).toFixed(1)} m
+                      {calculateTideHeight(nowHour.time, location.latitude, location.longitude).toFixed(1)} m
                     </div>
                     <div className={`text-xs ${theme === 'dark' ? 'text-slate-300' : 'text-slate-600'}`}>
-                      {getTideStatus(nowHour.time)} • High: {getTideTimes(nowHour.time).nextHigh}
+                      {getTideStatus(nowHour.time, location.latitude, location.longitude)} • High: {getTideTimes(nowHour.time, location.latitude, location.longitude).nextHigh}
                     </div>
                     <div className={`text-xs ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>
-                      Low: {getTideTimes(nowHour.time).nextLow}
+                      Low: {getTideTimes(nowHour.time, location.latitude, location.longitude).nextLow}
                     </div>
                   </div>
                 </>
@@ -937,10 +996,10 @@ export default function App() {
                   <div key={item} className={`rounded-2xl p-4 ${theme === 'dark' ? 'bg-slate-900' : 'bg-blue-50'}`}>
                     <div className={`text-xs font-medium ${theme === 'dark' ? 'text-blue-400' : 'text-blue-600'}`}>Tide Info</div>
                     <div className={`mt-1 text-2xl font-bold ${theme === 'dark' ? 'text-slate-100' : 'text-slate-900'}`}>
-                      {calculateTideHeight(nowHour.time).toFixed(1)} m
+                      {calculateTideHeight(nowHour.time, location.latitude, location.longitude).toFixed(1)} m
                     </div>
                     <div className={`text-sm ${theme === 'dark' ? 'text-slate-300' : 'text-slate-600'}`}>
-                      {getTideStatus(nowHour.time)}
+                      {getTideStatus(nowHour.time, location.latitude, location.longitude)}
                     </div>
                   </div>
                 )
@@ -1099,6 +1158,9 @@ export default function App() {
               if (!exists) {
                 setSavedLocations((s) => ({ items: [...s.items, location] }))
               }
+            }}
+            onDeleteLocation={(locationId) => {
+              setSavedLocations((s) => ({ items: s.items.filter((l) => l.id !== locationId) }))
             }}
             onClose={() => setShowLocationPanel(false)}
             isCurrentLocationSaved={savedLocations.items.some((l) => l.id === location.id)}

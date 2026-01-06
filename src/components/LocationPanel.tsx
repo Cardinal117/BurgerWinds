@@ -11,6 +11,7 @@ interface LocationPanelProps {
   onSearchChange: (value: string) => void
   onLocationSelect: (location: GeoResult) => void
   onSaveLocation: () => void
+  onDeleteLocation: (locationId: number) => void
   onClose: () => void
   isCurrentLocationSaved: boolean
 }
@@ -24,6 +25,7 @@ export function LocationPanel({
   onSearchChange,
   onLocationSelect,
   onSaveLocation,
+  onDeleteLocation,
   onClose,
   isCurrentLocationSaved
 }: LocationPanelProps) {
@@ -125,9 +127,7 @@ export function LocationPanel({
                     {l.id !== 0 && (
                       <button
                         type="button"
-                        onClick={() => {
-                          // This will be handled by parent
-                        }}
+                        onClick={() => onDeleteLocation(l.id)}
                         className={`absolute top-2 right-2 p-1 rounded-full text-xs ${
                           theme === 'dark' ? 'text-slate-400 hover:bg-slate-700' : 'text-slate-400 hover:bg-slate-100'
                         }`}
