@@ -1,0 +1,30 @@
+name: BurgerWinds Discord Scheduler
+
+on:
+  schedule:
+    - cron: "0 * * * *"
+  workflow_dispatch:
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Send forecast to Discord
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          BW_LAT: ${{ vars.BW_LAT }}
+          BW_LON: ${{ vars.BW_LON }}
+          BW_LOCATION_NAME: ${{ vars.BW_LOCATION_NAME }}
+          BW_TIMEZONE: ${{ vars.BW_TIMEZONE }}
+          BW_WIND_UNIT: ${{ vars.BW_WIND_UNIT }}
+          BW_SENDS_PER_DAY: ${{ vars.BW_SENDS_PER_DAY }}
+          BW_SEND_HOURS: ${{ vars.BW_SEND_HOURS }}
+        run: node scripts/discordSender.mjs
