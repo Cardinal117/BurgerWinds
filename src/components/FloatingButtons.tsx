@@ -1,13 +1,14 @@
-import React, { useState } from 'react'
-import { MapPin, Send, Settings, MessageSquare } from 'lucide-react'
+import React from 'react'
+import { MapPin } from 'lucide-react'
+import { SettingsDropdown } from './SettingsDropdown'
 
 interface FloatingButtonsProps {
   theme: 'light' | 'dark'
   showLocationPanel: boolean
   showNtfyPanel: boolean
+  showDiscordPanel: boolean
   setShowLocationPanel: (value: boolean) => void
   setShowNtfyPanel: (value: boolean) => void
-  showDiscordPanel: boolean
   setShowDiscordPanel: (value: boolean) => void
 }
 
@@ -15,28 +16,19 @@ export function FloatingButtons({
   theme,
   showLocationPanel,
   showNtfyPanel,
+  showDiscordPanel,
   setShowLocationPanel,
   setShowNtfyPanel,
   setShowDiscordPanel
 }: FloatingButtonsProps) {
-  const handleDiscordClick = () => {
-    setShowDiscordPanel(true)
-    setShowNtfyPanel(false)
-    setShowLocationPanel(false)
-  }
-
-  const handleNtfyClick = () => {
-    setShowNtfyPanel(true)
-    setShowLocationPanel(false)
-  }
-
   const handleLocationClick = () => {
     setShowLocationPanel(true)
     setShowNtfyPanel(false)
+    setShowDiscordPanel(false)
   }
 
   return (
-    <div className="fixed bottom-4 right-4 md:bottom-6 flex-col gap-3 md:gap-4 z-40">
+    <div className="fixed bottom-4 right-4 md:bottom-6 flex flex-col gap-3 md:gap-4 z-40">
       {/* Location Button */}
       <button
         onClick={handleLocationClick}
@@ -55,57 +47,14 @@ export function FloatingButtons({
         </div>
       </button>
 
-      {/* Ntfy Button */}
-      <button
-        onClick={handleNtfyClick}
-        className={`group relative rounded-full p-3 md:p-4 shadow-xl transition-colors ${
-          theme === 'dark'
-            ? 'bg-gradient-to-br from-purple-600 to-purple-800 text-white hover:from-purple-700 hover:to-purple-900 border-2 border-purple-500'
-            : 'bg-gradient-to-br from-purple-400 to-purple-600 text-white hover:from-purple-500 hover:to-purple-700 border-2 border-purple-300'
-        }`}
-        type="button"
-      >
-        <div className="flex items-center">
-          <MessageSquare className="mr-2" size={16} />
-          <span className="text-white font-medium">Ntfy</span>
-        </div>
-      </button>
-
-      {/* Discord Button */}
-      <button
-        onClick={handleDiscordClick}
-        className={`group relative rounded-full p-3 md:p-4 shadow-xl transition-colors ${
-          theme === 'dark'
-            ? 'bg-gradient-to-br from-purple-600 to-purple-800 text-white hover:from-purple-700 hover:to-purple-900 border-2 border-purple-500'
-            : 'bg-gradient-to-br from-purple-400 to-purple-600 text-white hover:from-purple-500 hover:to-purple-700 border-2 border-purple-300'
-        }`}
-        type="button"
-      >
-        <div className="flex items-center">
-          <Settings className="mr-2" size={16} />
-          <span className="text-white font-medium">Discord</span>
-        </div>
-      </button>
-
-      {/* Settings Button */}
-      <button
-        onClick={() => {
-          setShowDiscordPanel(true)
-          setShowNtfyPanel(false)
-          setShowLocationPanel(false)
-        }}
-        className={`group relative rounded-full p-3 md:p-4 shadow-xl transition-colors ${
-          theme === 'dark'
-            ? 'bg-gradient-to-br from-gray-600 to-gray-700 text-white hover:from-gray-600 hover:to-gray-500 border-2 border-gray-300'
-            : 'bg-gradient-to-br from-gray-400 to-gray-600 text-white hover:from-gray-500 hover:to-gray-700 border-2 border-gray-300'
-        }`}
-        type="button"
-      >
-        <div className="flex items-center">
-          <Settings className="mr-2" size={16} />
-          <span className="text-white font-medium">Settings</span>
-        </div>
-      </button>
+      {/* Settings Dropdown */}
+      <SettingsDropdown
+        theme={theme}
+        showNtfyPanel={showNtfyPanel}
+        showDiscordPanel={showDiscordPanel}
+        setShowNtfyPanel={setShowNtfyPanel}
+        setShowDiscordPanel={setShowDiscordPanel}
+      />
     </div>
   )
 }
