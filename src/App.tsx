@@ -6,6 +6,8 @@ import { Compass } from './components/Compass'
 import { FloatingButtons } from './components/FloatingButtons'
 import { LocationPanel } from './components/LocationPanel'
 import { NtfyPanel, NtfySettings } from './components/NtfyPanel'
+import { DiscordSettings } from './components/DiscordSettings'
+import { DiscordConfig } from './lib/discordService'
 
 // Lazy load heavy components
 const HourlyForecast = lazy(() => import('./components/HourlyForecast').then(module => ({ default: module.HourlyForecast })))
@@ -377,6 +379,7 @@ export default function App() {
     tideInfo: false,
   }))
   const [ntfy, setNtfy] = useState<NtfySettings>(() => readJson<NtfySettings>('bw_ntfy', { enabled: false, topic: '', schedule: [] }))
+  const [discordConfig, setDiscordConfig] = useState<DiscordConfig>(() => readJson<DiscordConfig>('bw_discord_config', { enabled: false, webhookUrl: '' }))
   const [location, setLocation] = useState<SavedLocation>(() => {
     const saved = readJson<SavedLocations>('bw_saved_locations', { items: [] })
     const current = readJson<SavedLocation>('bw_location', DEFAULT_LOCATION)
@@ -389,21 +392,6 @@ export default function App() {
     hoursToShow: 36,
     compassDirection: 'wind'
   }))
-
-  const [bundle, setBundle] = useState<ForecastBundle | null>(null)
-  const [loading, setLoading] = useState(false)
-  const [err, setErr] = useState<string | null>(null)
-
-  const [showLocationPanel, setShowLocationPanel] = useState(false)
-  const [showNtfyPanel, setShowNtfyPanel] = useState(false)
-
-  const [search, setSearch] = useState('')
-  const [searchResults, setSearchResults] = useState<GeoResult[]>([])
-  const searchTimer = useRef<number | null>(null)
-
-  useEffect(() => {
-    writeJson('bw_unit', unit)
-  }, [unit])
 
   useEffect(() => {
     writeJson('bw_theme', theme)
@@ -437,8 +425,27 @@ export default function App() {
     writeJson('bw_temperature_unit', temperatureUnit)
   }, [temperatureUnit])
 
+  useEffect(() => {
+    writeJson('bw_discord_config', discordConfig)
+  }, [discordConfig])
+
   // Hourly forecast filter state
   const [hourlyFilter, setHourlyFilter] = useState<'6h' | '24h' | '7d'>('24h')
+
+  // Application state
+  const [bundle, setBundle] = useState<ForecastBundle | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [err, setErr] = useState<string | null>(null)
+
+  // Panel visibility state
+  const [showLocationPanel, setShowLocationPanel] = useState(false)
+  const [showNtfyPanel, setShowNtfyPanel] = useState(false)
+  const [showDiscordPanel, setShowDiscordPanel] = useState(false)
+
+  // Search state
+  const [search, setSearch] = useState('')
+  const [searchResults, setSearchResults] = useState<GeoResult[]>([])
+  const searchTimer = useRef<number>()
 
   const refresh = useCallback(async () => {
     setLoading(true)
@@ -1146,10 +1153,30 @@ export default function App() {
           theme={theme}
           showLocationPanel={showLocationPanel}
           showNtfyPanel={showNtfyPanel}
-          ntfyEnabled={ntfy.enabled}
-          onLocationClick={() => setShowLocationPanel(!showLocationPanel)}
-          onNtfyClick={() => setShowNtfyPanel(!showNtfyPanel)}
+          showDiscordPanel={showDiscordPanel}
+          setShowLocationPanel={setShowLocationPanel}
+          setShowNtfyPanel={setShowNtfyPanel}
+          setShowDiscordPanel={setShowDiscordPanel}
         />
+
+        {/* Discord Settings Panel */}
+        {showDiscordPanel && (
+          <DiscordSettings
+            theme={theme}
+            isOpen={showDiscordPanel}
+            currentConfig={discordConfig}
+            onClose={() => setShowDiscordPanel(false)}
+            onSave={(config) => {
+              setDiscordConfig(config)
+              // Send test notification when config is saved
+              if (config.enabled && config.webhookUrl) {
+                const testMessage = '🧪 Discord integration test successful!'
+                // This would normally send to Discord, but for testing we'll just log it
+                console.log('✅ Discord test would send:', testMessage)
+              }
+            }}
+          />
+        )}
 
         {/* Location slide-up panel */}
         {showLocationPanel && (
