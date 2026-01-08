@@ -1384,7 +1384,7 @@ const [hourlyFilter, setHourlyFilter] = useState<'6h' | '24h' | '7d'>('24h')
       </div>
 
       {/* Footer */}
-      <footer className={`mt-16 border-t ${theme === 'dark' ? 'border-slate-700 bg-slate-900' : 'border-slate-200 bg-white'} py-8 relative z-20`}>
+      <footer className={`mt-16 border-t ${theme === 'dark' ? 'border-slate-700 bg-slate-900' : 'border-slate-200 bg-white'} py-8 pb-24 md:pb-8 relative z-10`}>
         <div className="mx-auto w-full max-w-6xl px-4">
           <div className="flex flex-col md:flex-row justify-between items-center gap-8">
             <div className={`text-sm ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}>

@@ -32,7 +32,7 @@ export function FloatingButtons({
   }
 
   return (
-    <div className="fixed bottom-4 right-4 md:bottom-6 flex flex-col gap-3 md:gap-4 z-40">
+    <div className="fixed bottom-4 right-4 md:bottom-8 flex flex-col gap-3 md:gap-4 z-50">
       {/* Location Button */}
       <button
         onClick={handleLocationClick}

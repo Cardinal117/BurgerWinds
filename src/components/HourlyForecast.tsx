@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useEffect, useRef } from 'react'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area, ReferenceLine } from 'recharts'
 import { ForecastHour, ForecastBundle } from '../lib/openMeteo'
-import { formatWindSpeed, degToCompass, fmtTime, fmtDay, WindUnit, TemperatureUnit, celsiusToFahrenheit, celsiusToKelvin } from '../lib/format'
+import { formatWindSpeed, degToCompass, fmtTime, fmtDay, WindUnit, TemperatureUnit, celsiusToFahrenheit, celsiusToKelvin, formatTemperatureForDisplay } from '../lib/format'
 import { TrendingUp, Table, Wind, Waves, Droplets, Cloud, Gauge, Thermometer, ChevronDown, ChevronUp, Navigation, Droplet, Sun, Eye, ThermometerSun } from 'lucide-react'
 import { WaveCompass } from './WaveCompass'
 
@@ -415,20 +415,14 @@ export function HourlyForecast({
                             {fmtDay(hour.time, bundle?.timezone || 'UTC').split(' ')[0]}
                           </div>
                         </div>
-                      </div>
-                      
-                      <div className="flex items-center gap-4">
-                        {/* Temperature */}
                         <div className="text-center">
                           <div className={`text-lg font-bold ${getTemperatureColor(hour.temperatureC)}`}>
-                            {Math.round(hour.temperatureC)}°
+                            {formatTemperatureForDisplay(hour.temperatureC, temperatureUnit)}
                           </div>
                           <div className={`text-xs ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>
-                            Feels {Math.round(hour.temperatureC - (hour.windSpeed10mKmh > 10 ? 2 : 0))}°
+                            Feels {formatTemperatureForDisplay(hour.temperatureC - (hour.windSpeed10mKmh > 10 ? 2 : 0), temperatureUnit)}
                           </div>
                         </div>
-                        
-                        {/* Expand/collapse button */}
                         <button 
                           className={`p-1 rounded-lg transition-colors ${theme === 'dark' ? 'hover:bg-slate-700' : 'hover:bg-slate-200'}`}
                           onClick={(e) => {
@@ -582,7 +576,7 @@ export function HourlyForecast({
                                   className="flex justify-between text-sm w-full text-left hover:opacity-80 transition-opacity"
                                 >
                                   <span>Water Temp</span>
-                                  <span className="font-medium">{hour.waterTempC.toFixed(1)}°C</span>
+                                  <span className="font-medium">{formatTemperatureForDisplay(hour.waterTempC, temperatureUnit)}</span>
                                 </button>
                               )}
                             </div>
